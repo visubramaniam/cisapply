@@ -1,0 +1,51 @@
+# CIS hardening configuration (Oracle Enterprise Linux 9) - Server
+# Review carefully before --apply in production.
+
+firewalld:
+  enforce_allowlist: true
+  zone: "public"
+  allow_services: ["ssh", "https"]
+  allow_ports: []
+
+ssh:
+  permit_root_login: "no"
+  password_authentication: "no"
+  x11_forwarding: "no"
+  max_auth_tries: 4
+  login_grace_time: 60
+  client_alive_interval: 300
+  client_alive_count_max: 0
+  allow_tcp_forwarding: "no"
+  allow_agent_forwarding: "no"
+  ciphers: ""
+  macs: ""
+  kex_algorithms: ""
+
+auth:
+  pwquality_minlen: 14
+  pwquality_minclass: 4
+  pwquality_dcredit: -1
+  pwquality_ucredit: -1
+  pwquality_lcredit: -1
+  pwquality_ocredit: -1
+  lockout_deny: 5
+  lockout_fail_interval: 900
+  lockout_unlock_time: 900
+  pass_max_days: 365
+  pass_min_days: 7
+  pass_warn_age: 14
+  umask: "027"
+
+selinux:
+  enforce: true
+
+mounts:
+  enable_tmp_mount_units: true
+  tmp_size: "1G"
+  var_tmp_size: "1G"
+
+ipv6:
+  disable: false
+
+aide:
+  initialize_if_missing: false
