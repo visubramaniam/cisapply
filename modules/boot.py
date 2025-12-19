@@ -3,22 +3,22 @@ Boot and Bootloader Hardening
 CIS Reference: 1.3.x, 1.4.x - Boot Settings and Bootloader Configuration
 """
 from typing import List, Dict, Any
-from .utils import ActionResult, run
-import os, re, subprocess
+from .utils import ActionResult, run, ensure_kv_in_file
+import os, re, subprocess, shlex
 
 def apply(cfg: Dict[str, Any], dry_run: bool, profile: str) -> List[ActionResult]:
     """
     Apply bootloader hardening:
     - Protect GRUB with password
     - Restrict /boot/grub2/grub.cfg permissions
-    - Restrict kernel parameters
+    - Restrict kernel parameters including audit
     - Disable unnecessary boot options
     """
     results = []
     
     # Control: Ensure /boot/grub2/grub.cfg has restricted permissions
     control_id = "BOOT-1"
-    title = "Ensure /boot/grub2/grub.cfg has restricted permissions (644)"
+    title = "Ensure /boot/grub2/grub.cfg has restricted permissions (600)"
     changed = False
     ok = True
     notes = ""
@@ -176,8 +176,77 @@ def apply(cfg: Dict[str, Any], dry_run: bool, profile: str) -> List[ActionResult
             files=[]
         ))
     
-    # Control: Ensure secure boot options in GRUB
+    # Control: Ensure audit and audit_backlog_limit kernel parameters in /etc/default/grub
     control_id = "BOOT-4"
+    title = "Ensure audit kernel parameters are set in /etc/default/grub"
+    changed = False
+    ok = True
+    notes = ""
+    commands = []
+    files = ["/etc/default/grub"]
+    
+    try:
+        grub_default = "/etc/default/grub"
+        if os.path.exists(grub_default):
+            # Read current content
+            with open(grub_default, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+            
+            # Check and update GRUB_CMDLINE_LINUX
+            pattern = r'GRUB_CMDLINE_LINUX="([^"]*)"'
+            match = re.search(pattern, content)
+            
+            current_params = ""
+            if match:
+                current_params = match.group(1)
+            
+            # Ensure audit parameters are present
+            required_params = ["audit=1", "audit_backlog_limit=8192"]
+            updated_params = current_params
+            
+            for param in required_params:
+                if param not in updated_params:
+                    updated_params = (updated_params + " " + param).strip()
+                    changed = True
+            
+            if changed:
+                if not dry_run:
+                    # Update the file
+                    new_content = re.sub(
+                        pattern,
+                        f'GRUB_CMDLINE_LINUX="{updated_params}"',
+                        content
+                    )
+                    with open(grub_default, "w", encoding="utf-8") as f:
+                        f.write(new_content)
+                    
+                    # Regenerate grub configuration
+                    cmd = ["grub2-mkconfig", "-o", "/boot/grub2/grub.cfg"]
+                    cp = run(cmd)
+                    commands.append(shlex.join(cmd))
+                    notes = f"Updated kernel parameters to: {updated_params}\n" + (cp.stdout + cp.stderr).strip()
+                    ok = (cp.returncode == 0)
+                else:
+                    notes = f"DRY-RUN: Would update kernel parameters to: {updated_params}"
+                    commands.append("grub2-mkconfig -o /boot/grub2/grub.cfg")
+            else:
+                notes = f"Audit kernel parameters already configured: {updated_params}"
+    except Exception as e:
+        ok = False
+        notes = f"Error: {str(e)}"
+    
+    results.append(ActionResult(
+        id=control_id,
+        title=title,
+        changed=changed,
+        ok=ok,
+        notes=notes,
+        commands=commands,
+        files=files
+    ))
+    
+    # Control: Ensure secure boot options in GRUB
+    control_id = "BOOT-5"
     title = "Ensure GRUB kernel parameters are secure"
     changed = False
     ok = True
@@ -190,7 +259,6 @@ def apply(cfg: Dict[str, Any], dry_run: bool, profile: str) -> List[ActionResult
         kernel_params_file = "/proc/cmdline"
         desired_params = {
             "audit=1": "Auditd enabled",
-            "apparmor=1": "AppArmor enforcing (if using AppArmor)",
         }
         
         if os.path.exists(kernel_params_file):
@@ -204,7 +272,7 @@ def apply(cfg: Dict[str, Any], dry_run: bool, profile: str) -> List[ActionResult
             
             if missing:
                 notes = f"Missing kernel parameters: {', '.join(missing)}"
-                notes += "\nTo apply, add to /etc/default/grub GRUB_CMDLINE_LINUX and run 'grub2-mkconfig'"
+                notes += "\nTo apply, add to /etc/default/grub GRUB_CMDLINE_LINUX and run 'grub2-mkconfig -o /boot/grub2/grub.cfg'"
             else:
                 notes = "Kernel parameters are secure"
         
