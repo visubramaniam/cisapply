@@ -45,26 +45,7 @@ def apply(cfg: Dict[str, Any], dry_run: bool, profile: str) -> List[ActionResult
         ensure_service_enabled(svc, dry_run, results, f"SVC-{svc}", f"Disable service: {svc}", state="mask")
     
     # Ensure AIDE package is installed
-    control_id = "SVC-AIDE-PKG"
-    title = "Ensure aide package is installed"
-    changed = False
-    ok = True
-    notes = ""
-    commands = []
-    files = []
-    
-    if not dry_run:
-        ensure_pkg("aide", results, control_id, title)
-    else:
-        results.append(ActionResult(
-            id=control_id,
-            title=title,
-            changed=False,
-            ok=True,
-            notes="DRY-RUN: Would ensure aide package installed",
-            commands=["yum install aide"],
-            files=[]
-        ))
+    ensure_pkg(["aide"], dry_run, results, "SVC-AIDE-PKG", "Ensure aide package is installed")
     
     # Initialize AIDE database if needed
     control_id = "SVC-AIDE-INIT"
