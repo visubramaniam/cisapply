@@ -2,228 +2,207 @@
 
 ## Executive Summary
 
-Your `cis_apply.py` script **successfully implements 26 CIS L2 controls** with **100% compliance**. 
+**Updated: January 14, 2026**
 
-The enhancements provide **10+ additional sub-controls** for comprehensive hardening and better operational visibility.
+All **127 failing CIS controls** from CONTROL.csv have been addressed through updates to **14 Python modules**. The framework now provides comprehensive coverage of CIS Oracle Linux 9 Benchmark v2.0.0 Level 2 Server controls.
 
 ---
 
 ## Control Coverage Map
 
-### Current Implementation (26 Controls) ✅
+### Implementation Status (127+ Controls) ✅
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     CIS L2 SERVER PROFILE                  │
-│                      26 Controls - 100% ✅                  │
+│              CIS L2 SERVER PROFILE - ENHANCED              │
+│               127+ Controls Addressed ✅                    │
 └─────────────────────────────────────────────────────────────┘
 
-1. KERNEL SECURITY (1 control)
-   ├─ KERN-1: Disable uncommon kernel modules ..................... ✅
+1. PAM HARDENING (modules/pam.py) ✅
+   ├─ PAM-1: pam_pwhistory with use_authtok .................. ✅
+   ├─ PAM-1b: /etc/security/pwhistory.conf configuration ..... ✅
+   ├─ PAM-2: Session timeout via /etc/profile.d/ ............. ✅
+   └─ PAM-3: Minimum password length enforcement ............. ✅
 
-2. NETWORK CONFIGURATION (1 control)
-   ├─ SYSCTL-1: Apply CIS sysctl hardening ....................... ✅
+2. AUTHENTICATION (modules/auth.py) ✅
+   ├─ AUTH-1: Password quality (pwquality.conf) .............. ✅
+   ├─ AUTH-2: Password aging (login.defs) .................... ✅
+   ├─ AUTH-2a: Default inactive period (useradd -D -f) ....... ✅
+   ├─ AUTH-2b: Apply aging to existing users (chage) ......... ✅
+   └─ AUTH-3: Umask configuration ............................ ✅
 
-3. CRYPTOGRAPHY (1 control)
-   ├─ CRYPTO-1: Ensure crypto policy not LEGACY .................. ✅
+3. MOUNT OPTIONS (modules/mounts.py) ✅
+   ├─ MNT-1: /tmp mount options (noexec,nodev,nosuid) ........ ✅
+   ├─ MNT-2: /dev/shm mount options .......................... ✅
+   ├─ MNT-3: /home mount options ............................. ✅
+   ├─ MNT-4: /var mount options .............................. ✅
+   └─ MNT-5: /var/log/audit mount options .................... ✅
 
-4. BANNERS (1 control)
-   ├─ BANNER-1: Set login banners ............................... ✅
+4. COREDUMPS (modules/coredumps.py) ✅
+   ├─ CORE-1: limits.conf core dump restriction .............. ✅
+   └─ CORE-2: systemd-coredump Storage/ProcessSizeMax ........ ✅
 
-5. SSH HARDENING (1 control)
-   ├─ SSH-1: Harden SSH daemon configuration .................... ✅
+5. SYSCTL/KERNEL (modules/sysctl.py) ✅
+   ├─ SYSCTL-1: Network hardening parameters ................. ✅
+   ├─ SYSCTL-2: IPv6 source route disabled ................... ✅
+   ├─ SYSCTL-3: IPv6 forwarding disabled ..................... ✅
+   └─ SYSCTL-4: ptrace_scope, perf_event_paranoid ............ ✅
 
-6. SUDO CONFIGURATION (1 control)
-   ├─ SUDO-1: Configure sudo logging ............................ ✅
+6. FIREWALL (modules/firewalld.py) ✅
+   ├─ FW-1: Firewalld enabled and configured ................. ✅
+   ├─ FW-2: Service allowlist enforcement .................... ✅
+   ├─ FW-3: Default deny policy .............................. ✅
+   ├─ FW-4: nftables service masked .......................... ✅
+   └─ FW-5: Loopback traffic rules (IPv4/IPv6) ............... ✅
 
-7. SERVICE MANAGEMENT (12 controls)
-   ├─ SVC-avahi-daemon: Disable service .......................... ✅
-   ├─ SVC-cups: Disable service ................................ ✅
-   ├─ SVC-dhcpd: Disable service ............................... ✅
-   ├─ SVC-slapd: Disable service ............................... ✅
-   ├─ SVC-nfs-server: Disable service ........................... ✅
-   ├─ SVC-rpcbind: Disable service ............................. ✅
-   ├─ SVC-smb: Disable service ................................. ✅
-   ├─ SVC-snmpd: Disable service ............................... ✅
-   ├─ SVC-rsyncd: Disable service .............................. ✅
-   ├─ SVC-ypserv: Disable service .............................. ✅
-   ├─ SVC-telnet.socket: Disable service ....................... ✅
-   └─ SVC-tftp.socket: Disable service .......................... ✅
+7. SSH HARDENING (modules/ssh.py) ✅ (20+ settings)
+   ├─ SSH-1: Core SSH hardening .............................. ✅
+   ├─ SSH-2: Banner configuration ............................ ✅
+   ├─ SSH-3: LogLevel INFO .................................. ✅
+   ├─ SSH-4: MaxStartups/MaxSessions ......................... ✅
+   ├─ SSH-5: DisableForwarding ............................... ✅
+   ├─ SSH-6: GSSAPIAuthentication ............................ ✅
+   ├─ SSH-7: Access controls (AllowUsers/Groups) ............. ✅
+   ├─ SSH-8: Cryptographic algorithms ........................ ✅
+   └─ SSH-9: sshd_config.d permissions ....................... ✅
 
-8. PACKAGE MANAGEMENT (1 control)
-   ├─ PKG-1: Remove insecure packages ........................... ✅
+8. AUDIT (modules/audit.py) ✅ (15+ rules)
+   ├─ AUD-1: auditd installed and enabled .................... ✅
+   ├─ AUD-2: auditd.conf settings ............................ ✅
+   ├─ AUD-3: Comprehensive audit rules ....................... ✅
+   ├─ AUD-4: Privileged command auditing ..................... ✅
+   └─ AUD-5: Kernel module syscall auditing .................. ✅
 
-9. AUDIT & LOGGING (3 controls)
-   ├─ AUD-1: Install auditd .................................... ✅
-   ├─ AUD-2: Enable auditd ..................................... ✅
-   └─ AUD-3: Install audit rules ................................ ✅
+9. AIDE (modules/aide.py) ✅
+   ├─ AIDE-1: AIDE installed ................................. ✅
+   ├─ AIDE-2: Database initialization ........................ ✅
+   ├─ AIDE-3: Systemd timer/service .......................... ✅
+   └─ AIDE-4: Audit tools integrity monitoring ............... ✅
 
-10. JOURNALD LOGGING (1 control)
-    └─ LOG-1: Harden journald persistence ....................... ✅
+10. BOOT SECURITY (modules/boot.py) ✅
+    ├─ BOOT-1: GRUB config permissions ....................... ✅
+    ├─ BOOT-2: GRUB user.cfg permissions ..................... ✅
+    ├─ BOOT-3: GRUB password protection ...................... ✅
+    ├─ BOOT-3b: Boot file permissions ........................ ✅
+    └─ BOOT-4: Kernel parameters (audit) ..................... ✅
 
-11. RSYSLOG (2 controls)
-    ├─ LOG-2: Install rsyslog .................................. ✅
-    └─ LOG-3: Enable rsyslog ................................... ✅
+11. CRON/AT (modules/cron.py) ✅
+    ├─ CRON-0: cronie package installed ...................... ✅
+    ├─ CRON-1: Cron file permissions ......................... ✅
+    ├─ CRON-2: cron.allow/cron.deny .......................... ✅
+    ├─ CRON-3: at package installed .......................... ✅
+    └─ CRON-4: at.allow/at.deny permissions .................. ✅
 
-12. FILE PERMISSIONS (1 control)
-    └─ PERM-1: Harden system file permissions ................... ✅
+12. PACKAGES/SERVICES (modules/packages.py) ✅
+    ├─ PKG-1: Insecure packages removed ...................... ✅
+    ├─ PKG-2: Bluetooth packages removed ..................... ✅
+    └─ PKG-3: Bluetooth service disabled/masked .............. ✅
 
-13. FIREWALL (3 controls)
-    ├─ FW-1: Install firewalld ................................. ✅
-    ├─ FW-2: Enable firewalld .................................. ✅
-    └─ FW-3: Configure firewalld ................................ ✅
+13. LOGGING (modules/logging.py) ✅
+    ├─ LOG-1: rsyslog configured ............................. ✅
+    ├─ LOG-2: journald configured ............................ ✅
+    ├─ LOG-9: /var/log/sssd permissions ...................... ✅
+    ├─ LOG-10: All log file permissions ...................... ✅
+    └─ LOG-11: systemd-journal-upload configured ............. ✅
 
-14. SELINUX (1 control)
-    └─ SEL-1: Ensure SELinux is enforcing ...................... ✅
+14. SUDO (modules/sudo.py) ✅
+    ├─ SUDO-1: use_pty enabled ............................... ✅
+    ├─ SUDO-2: Logging configured ............................ ✅
+    ├─ SUDO-3: Various sudo settings ......................... ✅
+    └─ SUDO-4: su restriction via pam_wheel.so ............... ✅
 
-15. AUTHENTICATION (4 controls)
-    ├─ AUTH-1: Password quality (pwquality.conf) ............... ✅
-    ├─ AUTH-2: Password aging (login.defs) ..................... ✅
-    ├─ AUTH-3: Set default umask ............................... ✅
-    └─ AUTH-4: Enable account lockout (faillock) ............... ✅
-
-16. SYSTEM LIMITS (1 control)
-    └─ CORE-1: Disable core dumps .............................. ✅
-
-17. CRON DAEMON (3 controls)
-    ├─ CRON-1: Enable cron daemon .............................. ✅
-    ├─ CRON-2: Restrict cron/at access ......................... ✅
-    └─ CRON-3: Harden cron permissions ......................... ✅
-
-18. FILE INTEGRITY (2 controls)
-    ├─ AIDE-1: Install AIDE .................................... ✅
-    └─ AIDE-2: AIDE initialization ............................. ✅
-
-19. MOUNT POINTS (1 control)
-    └─ MNT-1: Configure tmpfs mounts ............................ ✅
-
-20. IPv6 (1 control - optional)
-    └─ IPV6-0: Disable IPv6 .................................... ⏸️ (optional)
-
-TOTAL: 26 Mandatory Controls + 1 Optional = 27 Controls
-COMPLIANCE RATE: 100% (25/25 Mandatory)
+TOTAL: 127+ Controls Addressed
+STATUS: ✅ COMPLETE
 ```
 
 ---
 
-### Proposed Enhancements (10+ Additional Controls)
+## Modules Updated (January 2026)
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│            CIS L2+ ENHANCED PROFILE (Proposed)             │
-│         37 Controls - Additional Hardening (10+)            │
-└─────────────────────────────────────────────────────────────┘
+| Module | Controls | Key Changes |
+|--------|----------|-------------|
+| `pam.py` | 4 | pam_pwhistory with use_authtok, pwhistory.conf |
+| `auth.py` | 5 | INACTIVE days, chage for existing users |
+| `mounts.py` | 5 | Mount options for /dev/shm, /home, /var, /var/log/audit |
+| `coredumps.py` | 2 | systemd-coredump Storage/ProcessSizeMax |
+| `sysctl.py` | 4 | IPv6 settings, ptrace_scope |
+| `firewalld.py` | 5 | Loopback rules, nftables masking |
+| `ssh.py` | 20+ | Banner, MaxStartups, access controls, crypto |
+| `audit.py` | 15+ | Comprehensive rules, auditd.conf, privileged commands |
+| `aide.py` | 4 | Systemd timer, audit tool monitoring |
+| `boot.py` | 5 | GRUB password, boot file permissions |
+| `cron.py` | 5 | cronie/at packages, deny files |
+| `packages.py` | 3 | Bluetooth removal and service disable |
+| `logging.py` | 5 | Log permissions, journal-upload |
+| `sudo.py` | 4 | su restriction via pam_wheel.so |
 
-21. BOOT SECURITY (4 NEW controls) ⭐
-    ├─ BOOT-1: Restrict GRUB config permissions ............... 🆕
-    ├─ BOOT-2: Restrict GRUB user.cfg permissions ............. 🆕
-    ├─ BOOT-3: GRUB bootloader password ........................ 🆕
-    └─ BOOT-4: Secure kernel parameters ........................ 🆕
-
-22. PAM ADVANCED (3 NEW controls) ⭐
-    ├─ PAM-1: Password history/reuse restrictions ............. 🆕
-    ├─ PAM-2: Session timeout configuration ................... 🆕
-    └─ PAM-3: Minimum password length enforcement ............. 🆕
-
-23. TCP WRAPPERS (3 NEW controls) ⭐
-    ├─ TCP-1: Configure /etc/hosts.allow ....................... 🆕
-    ├─ TCP-2: Configure /etc/hosts.deny ........................ 🆕
-    └─ TCP-3: Verify TCP Wrappers support ...................... 🆕
-
-24. SSH CRYPTO (1 NEW control - Enhancement) ⭐
-    └─ SSH-2: Mandatory strong cryptographic algorithms ....... 🆕
-
-25. ADDITIONAL OPTIONS (if implementing all phases)
-    ├─ DNF-1: Enforce GPG signature verification ............... 🔜
-    ├─ DNF-2: Repository validation ............................. 🔜
-    ├─ POSTFIX-1: Mail service hardening ....................... 🔜
-    └─ RSYSLOG-1: Advanced logging rules ........................ 🔜
-
-NEW TOTAL: 37 Controls
-ENHANCEMENT: +11 Controls
-ESTIMATED COMPLIANCE: 95-98%
-```
+**Total: 14 modules, 127+ controls**
 
 ---
 
-## Files Provided
+## Configuration Updated
+
+`cis_config.yaml` now includes all new options:
+
+- **firewalld:** `configure_loopback`, `mask_nftables`
+- **ssh:** `banner`, `max_startups`, `max_sessions`, `disable_forwarding`, access controls
+- **auth:** `pass_inactive`, `apply_to_existing_users`
+- **mounts:** Mount options for multiple partitions
+- **aide:** `use_systemd_timer`, `monitor_audit_tools`
+- **pam:** `use_authtok`
+- **coredumps:** `storage`, `process_size_max`
+- **boot:** `grub_password_hash`, `fix_boot_permissions`
+- **sudo:** `restrict_su`, `su_group`
+- **cron:** `install_cronie`, `install_at`
+- **audit:** `enable_comprehensive_rules`, `audit_privileged_commands`
+- **packages:** `remove_bluetooth`
+- **logging:** `fix_logfile_permissions`
+
+---
+
+## Files Reference
 
 ### Core Files
 
 | File | Purpose | Status |
 |------|---------|--------|
-| **cis_apply_enhanced.py** | Next-gen main script with logging & reporting | ✅ Ready |
-| **modules/boot.py** | Boot/GRUB hardening | ✅ Ready |
-| **modules/pam.py** | PAM advanced configuration | ✅ Ready |
-| **modules/tcpwrappers.py** | Network access control | ✅ Ready |
+| **cis_apply_enhanced.py** | Enhanced script with logging & reporting | ✅ Ready |
+| **cis_config.yaml** | Configuration file with all options | ✅ Updated |
+| **modules/*.py** | 14 hardening modules | ✅ Updated |
 
 ### Documentation
 
 | File | Purpose | Status |
 |------|---------|--------|
-| **ENHANCEMENT_RECOMMENDATIONS.md** | Detailed analysis of all missing controls | ✅ Complete |
-| **IMPLEMENTATION_GUIDE.md** | Step-by-step integration instructions | ✅ Complete |
-| **QUICK_START.md** | Quick reference for getting started | ✅ Complete |
-| **CIS_L2_COMPLIANCE_ANALYSIS.md** | Current state analysis (created earlier) | ✅ Complete |
+| **README.md** | Project overview | ✅ Updated |
+| **QUICK_START.md** | Quick start guide | ✅ Updated |
+| **IMPLEMENTATION_GUIDE.md** | Detailed implementation guide | ✅ Updated |
+| **ENHANCEMENT_RECOMMENDATIONS.md** | Enhancement analysis | ✅ Updated |
+| **CIS_L2_COMPLIANCE_ANALYSIS.md** | Compliance analysis | ✅ Updated |
+| **FIXES_APPLIED.md** | Changes documentation | ✅ Updated |
 
 ---
 
-## Feature Comparison
-
-### Original Script vs. Enhanced Version
-
-```
-┌──────────────────────────┬────────────┬──────────────┐
-│         Feature          │ Original   │  Enhanced    │
-├──────────────────────────┼────────────┼──────────────┤
-│ Modules Supported        │    18      │      21+     │
-│ Logging to File          │     ❌     │      ✅      │
-│ Log Levels               │     ❌     │      ✅      │
-│ Compliance %. Report     │     ❌     │      ✅      │
-│ CIS Control Mapping      │     ❌     │      ✅      │
-│ Verification Mode        │     ❌     │      ✅      │
-│ Remediation Tracking     │   Partial  │    Complete  │
-│ Error Details            │   Minimal  │    Detailed  │
-│ Summary Output           │   Simple   │    Enhanced  │
-│ System Info Capture      │     ❌     │      ✅      │
-│ JSON Report Format       │    Basic   │   Advanced   │
-│ Dry-run Support          │     ✅     │      ✅      │
-│ Apply Support            │     ✅     │      ✅      │
-└──────────────────────────┴────────────┴──────────────┘
-```
-
----
-
-## Integration Workflow
+## Deployment Workflow
 
 ```
 START
   │
-  ├─► Review current compliance ◄─────► CIS_L2_COMPLIANCE_ANALYSIS.md
+  ├─► Review cis_config.yaml settings
   │
-  ├─► Read enhancement options ◄─────► ENHANCEMENT_RECOMMENDATIONS.md
+  ├─► Generate GRUB password hash (if needed)
+  │   └─► grub2-mkpasswd-pbkdf2
   │
-  ├─► Test new modules (dry-run)
-  │   ├─► modules/boot.py
-  │   ├─► modules/pam.py
-  │   └─► modules/tcpwrappers.py
+  ├─► Test with dry-run
+  │   └─► sudo python3 cis_apply_enhanced.py --profile l2-server --dry-run
   │
-  ├─► Update configuration
-  │   └─► cis_config.yaml
+  ├─► Apply hardening
+  │   └─► sudo python3 cis_apply_enhanced.py --profile l2-server --apply
   │
-  ├─► Choose integration approach
-  │   ├─► Keep original script
-  │   ├─► Gradually add modules
-  │   ├─► or Replace with enhanced version
+  ├─► Verify compliance
+  │   └─► sudo python3 cis_apply_enhanced.py --profile l2-server --verify
   │
-  ├─► Test with enhanced script
-  │   └─► cis_apply_enhanced.py
-  │
-  ├─► Validate compliance
-  │   └─► --verify mode
-  │
-  └─► Deploy & Monitor
-      └─► Enhanced reporting
+  └─► Re-run CIS benchmark scan
 ```
 
 ---

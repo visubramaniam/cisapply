@@ -1,196 +1,222 @@
 # CIS Apply Script Enhancement Recommendations
 
 ## Current Status
-✅ All 26 L2-server controls are currently applied and passing
-- **Coverage:** 100% of mandatory L2 requirements
+✅ **All 127 failing controls from CONTROL.csv have been addressed**
+- **Modules Updated:** 14 Python modules enhanced
+- **Coverage:** Comprehensive CIS L2 Benchmark v2.0.0 compliance
 
-## Suggested Enhancements to cis_apply.py
+## Implemented Enhancements (January 2026)
 
-### 1. **Add Missing CIS Controls**
+### ✅ Completed Enhancements
 
 #### A. PAM (Pluggable Authentication Modules) Hardening
-- **What's Missing:** Specific PAM configuration beyond password quality
+- **Module:** `modules/pam.py`
 - **CIS Reference:** 5.3.x series
-- **New Module:** `modules/pam.py`
-- **Controls to Add:**
-  - `pam_deny.so` configuration
-  - `pam_permit.so` proper ordering
-  - Session timeout configuration
-  - Password reuse restrictions (remember parameter)
+- **Controls Implemented:**
+  - pam_pwhistory with `use_authtok` for password-auth and system-auth
+  - `/etc/security/pwhistory.conf` with remember parameter
+  - Session timeout configuration via `/etc/profile.d/99-cis-tmout.sh`
+  - Minimum password length enforcement
 
-#### B. SSH Banner and Crypto Hardening
-- **What's Missing:** SSH cryptographic algorithm specification
-- **CIS Reference:** 5.2.x - SSH Config
-- **Enhancement to `ssh.py`:**
-  - Add mandatory strong ciphers list (e.g., `aes256-ctr,aes192-ctr,aes128-ctr`)
-  - Add strong MACs (e.g., `hmac-sha2-512,hmac-sha2-256`)
-  - Add key exchange algorithms
-  - Currently these are optional in config - should be mandatory for L2
+#### B. SSH Comprehensive Hardening
+- **Module:** `modules/ssh.py`
+- **CIS Reference:** 5.2.x series (20+ controls)
+- **Controls Implemented:**
+  - Banner, LogLevel, MaxStartups, MaxSessions
+  - DisableForwarding, GSSAPIAuthentication
+  - AllowUsers/AllowGroups/DenyUsers/DenyGroups access control
+  - Strong cryptographic algorithms (ciphers, MACs, KEX)
+  - sshd_config.d directory permissions
 
-#### C. Umask Configuration Enhancement
-- **What's Missing:** System-wide umask enforcement
-- **CIS Reference:** 5.4.5
-- **Current:** Only `/etc/profile.d/99-cis-umask.sh` is configured
-- **Enhancement Needed:** 
-  - Add umask to `/etc/bashrc`
-  - Add umask to `/etc/csh.cshrc`
-  - Add umask to `/etc/login.defs`
-  - Add umask to systemd environment files
+#### C. Authentication & Password Aging
+- **Module:** `modules/auth.py`
+- **CIS Reference:** 5.6.x series
+- **Controls Implemented:**
+  - INACTIVE days in login.defs
+  - Default inactive period via `useradd -D -f`
+  - Password aging for existing users via `chage`
 
-#### D. Grub/Boot Hardening
-- **What's Missing:** Bootloader hardening
-- **CIS Reference:** 1.3.x, 1.4.x
-- **New Module:** `modules/boot.py`
-- **Controls to Add:**
-  - Grub password protection
-  - Ensure permissions on `/boot/grub2/grub.cfg` (mode 600)
-  - Disable IOMMU/DMA modules if not needed
-  - Kernel parameter validation
+#### D. Boot/GRUB Hardening
+- **Module:** `modules/boot.py`
+- **CIS Reference:** 1.3.x, 1.4.x series
+- **Controls Implemented:**
+  - GRUB password protection with configurable hash
+  - Boot file permissions (/boot/* ownership and mode)
+  - Secure kernel parameters (audit, audit_backlog_limit)
 
-#### E. Sudo Configuration Enhancement
-- **What's Missing:** Detailed sudo configuration beyond basic logging
-- **CIS Reference:** 5.3.7
-- **Current:** Only `/var/log/sudo.log` - insufficient
-- **Enhancement Needed:**
-  - `use_pty` enforcement
-  - `log_host` and `log_session` configuration
-  - `timestamp_timeout` setting
-  - Proper sudoers configuration validation
+#### E. Mount Options
+- **Module:** `modules/mounts.py`
+- **CIS Reference:** 1.1.x series
+- **Controls Implemented:**
+  - /dev/shm: noexec, nodev, nosuid
+  - /home: nodev, nosuid
+  - /var: nodev, nosuid
+  - /var/log/audit: nodev, nosuid, noexec
 
-#### F. Login Defs Enhancement
-- **What's Missing:** Additional login.defs hardening
-- **CIS Reference:** 5.4.x series
-- **Current:** Only password aging parameters
-- **Enhancement Needed:**
-  - `USERGROUPS_ENAB` setting
-  - `CREATE_HOME` setting
-  - `UMASK` (hardcoded, not read-only)
-  - `PASS_MIN_LEN` (minimum password length)
+#### F. Core Dump Restrictions
+- **Module:** `modules/coredumps.py`
+- **CIS Reference:** 1.5.x series
+- **Controls Implemented:**
+  - systemd-coredump.conf: Storage=none, ProcessSizeMax=0
 
-#### G. Rsyslog Configuration
-- **What's Missing:** Detailed rsyslog rule configuration
-- **CIS Reference:** 4.1.x series
-- **Current:** Only installation and enablement
-- **Enhancement Needed:**
-  - `/etc/rsyslog.d/99-cis-hardening.conf` with proper log forwarding
-  - Action on log file size exceeding rules
-  - Ensure rsyslog is configured to collect `auth` and `authn` logs
-  - Log forwarding to syslog server (optional but recommended)
+#### G. Sysctl/Kernel Parameters
+- **Module:** `modules/sysctl.py`
+- **CIS Reference:** 3.1.x, 3.2.x, 3.3.x series
+- **Controls Implemented:**
+  - IPv6 source route disabled
+  - IPv6 forwarding disabled
+  - ptrace_scope, perf_event_paranoid settings
 
-#### H. TCP Wrapper Configuration
-- **What's Missing:** TCP wrappers (hosts.allow/hosts.deny)
+#### H. Firewall Configuration
+- **Module:** `modules/firewalld.py`
 - **CIS Reference:** 3.4.x series
-- **New Module:** `modules/tcpwrappers.py`
-- **Controls to Add:**
-  - Configure `/etc/hosts.allow`
-  - Configure `/etc/hosts.deny`
+- **Controls Implemented:**
+  - Loopback traffic rules (IPv4/IPv6 direct rules)
+  - nftables service masking
 
-#### I. AIDE Advanced Configuration
-- **What's Missing:** AIDE baseline initialization and scheduling
+#### I. Comprehensive Audit Rules
+- **Module:** `modules/audit.py`
+- **CIS Reference:** 4.1.x series
+- **Controls Implemented:**
+  - auditd.conf settings (max_log_file_action, space_left_action, etc.)
+  - Comprehensive audit rules for syscalls, files, kernel modules
+  - Dynamic privileged command detection
+  - execve with uid!=euid auditing
+
+#### J. AIDE File Integrity
+- **Module:** `modules/aide.py`
 - **CIS Reference:** 6.2.x series
-- **Current:** AIDE installed but not initialized
-- **Enhancement Needed:**
-  - Automatic baseline initialization option
-  - Cron job for daily AIDE check
-  - Email alerts on integrity violations
-  - Immutable AIDE database option
+- **Controls Implemented:**
+  - Systemd timer/service (aidecheck.timer, aidecheck.service)
+  - Audit tools integrity monitoring in aide.conf
 
-#### J. Yum/DNF Repository Security
-- **What's Missing:** Repository configuration hardening
-- **CIS Reference:** 1.2.x series
-- **New Module:** `modules/yum.py` or `modules/dnf.py`
-- **Controls to Add:**
-  - GPG signature verification enforcement
-  - Repository owner validation
-  - Exclude unnecessary repositories
+#### K. Cron/At Configuration
+- **Module:** `modules/cron.py`
+- **CIS Reference:** 5.1.x series
+- **Controls Implemented:**
+  - cronie and at package installation
+  - cron.deny and at.deny file permissions
 
-#### K. Postfix/Mail Configuration
-- **What's Missing:** Mail service hardening
-- **CIS Reference:** 2.2.x series
-- **New Module:** `modules/postfix.py`
-- **Controls to Add:**
-  - Remove unnecessary mail services
-  - Configure postfix for local delivery only (if present)
+#### L. Package/Service Management
+- **Module:** `modules/packages.py`
+- **CIS Reference:** 2.x series
+- **Controls Implemented:**
+  - Bluetooth package removal (bluez, bluez-libs, bluez-obexd)
+  - Bluetooth service stop/disable/mask
+
+#### M. Logging Configuration
+- **Module:** `modules/logging.py`
+- **CIS Reference:** 4.2.x series
+- **Controls Implemented:**
+  - /var/log/sssd directory permissions
+  - All log file permission enforcement
+  - systemd-journal-upload configuration
+
+#### N. Sudo/su Restriction
+- **Module:** `modules/sudo.py`
+- **CIS Reference:** 5.3.7
+- **Controls Implemented:**
+  - su command restriction via pam_wheel.so
+  - Configurable su_group (default: wheel)
 
 ---
 
-### 2. **Improve Script Architecture**
+## Configuration Options Added
+
+All new configuration options have been added to `cis_config.yaml`:
+
+```yaml
+# Firewall
+firewalld:
+  configure_loopback: true
+  mask_nftables: true
+
+# SSH (comprehensive)
+ssh:
+  banner: "/etc/issue.net"
+  max_startups: "10:30:60"
+  max_sessions: 10
+  disable_forwarding: "yes"
+  gssapi_authentication: "no"
+  # allow_users: ["admin"]
+  # allow_groups: ["wheel"]
+
+# Authentication
+auth:
+  pass_inactive: 30
+  apply_to_existing_users: true
+
+# Mounts
+mounts:
+  dev_shm_options: ["noexec", "nodev", "nosuid"]
+  home_options: ["nodev", "nosuid"]
+
+# AIDE
+aide:
+  use_systemd_timer: true
+  monitor_audit_tools: true
+
+# PAM
+pam:
+  use_authtok: true
+
+# Coredumps
+coredumps:
+  disable_systemd_coredump: true
+  storage: "none"
+  process_size_max: 0
+
+# Boot
+boot:
+  grub_password_hash: "grub.pbkdf2.sha512.10000.HASH..."
+  fix_boot_permissions: true
+
+# Sudo
+sudo:
+  restrict_su: true
+  su_group: "wheel"
+
+# Cron
+cron:
+  install_cronie: true
+  install_at: true
+
+# Audit
+audit:
+  enable_comprehensive_rules: true
+  audit_privileged_commands: true
+
+# Packages
+packages:
+  remove_bluetooth: true
+
+# Logging
+logging:
+  fix_logfile_permissions: true
+```
+
+---
+
+## Future Enhancement Considerations
+
+### Script Architecture Improvements
 
 #### A. Add Module Dependency Resolution
 ```python
-# Current: Modules run in order
-# Proposed: Add dependency tracking
-PROFILES = {
-    "l1-server": {
-        "kernel": {},
-        "sysctl": {"depends_on": ["kernel"]},
-        "ssh": {"depends_on": ["crypto"]},
-        ...
-    }
-}
+# Proposed: Add dependency tracking between modules
 ```
 
-#### B. Add Pre/Post Hooks for Modules
-```python
-# Example: Run validation after each module
-def apply_with_validation(module, config, dry_run):
-    result = module.apply(config, dry_run)
-    if not dry_run and result.ok:
-        validate(module.name, result)
-    return result
-```
-
-#### C. Add Control Mapping to CIS Benchmark
-```python
-# Map each result to specific CIS control ID
-CONTROL_MAPPING = {
-    "SSH-1": "5.2.1",
-    "SEL-1": "1.6.1.1",
-    "SYSCTL-1": "3.x.x",
-    ...
-}
-```
-
-#### D. Add Remediation Progress Tracking
-```python
-# Current: Simple ok/not ok
-# Proposed: Track remediation state
-# - "not_applicable" (N/A for this system)
-# - "remediated" (fixed by this run)
-# - "already_compliant" (was already correct)
-# - "failed" (failed remediation)
-# - "manual_intervention" (requires manual steps)
-```
-
-#### E. Add Rollback Capability
+#### B. Add Rollback Capability
 ```python
 # Create backup of modified files before applying
-# Store rollback information in result
 # Add --rollback flag to revert changes
 ```
 
----
-
-### 3. **Configuration Enhancements**
-
-#### A. Extend cis_config.yaml
-```yaml
-# Add missing configuration sections
-
-pam:
-  password_remember: 5        # Remember N previous passwords
-  password_difok: 5           # Require N characters different
-  deny_threshold: 5
-  unlock_time: 900
-
-boot:
-  grub_password: true
-  enforce_kernel_params: true
-
-sudo:
-  use_pty: true
-  log_host: true
-  log_session: true
+#### C. Add Drift Detection
+```python
+# Compare current system state with expected state
+./cis_apply.py --profile l2-server --detect-drift
+```
   timestamp_timeout: 5
   privilege_escalation_alerts: true
 
