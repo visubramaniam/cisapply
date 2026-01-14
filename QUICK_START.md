@@ -1,300 +1,193 @@
-# Quick Start Guide - CIS Apply Script Enhancements
+# Quick Start Guide - CIS Apply Script
 
-## What Was Changed?
+## Overview
 
-Your `cis_apply.py` script is already **100% compliant** with CIS Level 2 requirements. However, I've created **enhancements** to add missing sub-controls and improve the overall security posture.
+This toolkit provides comprehensive CIS Level 2 hardening for Oracle Enterprise Linux 9, addressing **127+ CIS controls** across **14 modules**.
 
-## New Files Created
+## What's Included
 
-### 1. **cis_apply_enhanced.py** (Next-gen main script)
-- Better logging and debugging
-- Control mapping to CIS benchmark IDs
-- Enhanced reporting with compliance metrics
-- Verification mode (`--verify` flag)
-- CIS control ID mapping
+### Core Scripts
+- **cis_apply.py** - Main hardening script
+- **cis_apply_enhanced.py** - Enhanced version with logging, reporting, and verification
 
-**Usage:**
+### 14 Hardening Modules
+
+| Module | Controls | Description |
+|--------|----------|-------------|
+| `aide.py` | 5 | File integrity monitoring, systemd timer, audit tool monitoring |
+| `audit.py` | 15+ | Comprehensive audit rules, auditd.conf, privileged commands |
+| `auth.py` | 8 | Password aging, inactive days, pwquality settings |
+| `boot.py` | 4 | GRUB password, boot file permissions, kernel params |
+| `coredumps.py` | 2 | limits.conf, systemd-coredump restrictions |
+| `cron.py` | 6 | File permissions, cronie/at packages, deny files |
+| `firewalld.py` | 5 | Service allowlist, loopback rules, nftables masking |
+| `logging.py` | 8 | rsyslog, journal-upload, log file permissions |
+| `mounts.py` | 6 | Mount options (noexec, nodev, nosuid) |
+| `packages.py` | 4 | Bluetooth removal, service disabling |
+| `pam.py` | 4 | pwhistory with use_authtok, session timeout |
+| `ssh.py` | 20+ | Full CIS SSH configuration |
+| `sudo.py` | 8 | Logging, pty, su restriction via pam_wheel |
+| `sysctl.py` | 15+ | Network, IPv6, ptrace_scope settings |
+
+## Quick Start
+
+### Step 1: Review Configuration
+
+Edit `cis_config.yaml` to customize settings for your environment:
+
+```yaml
+# Key settings to review:
+ssh:
+  permit_root_login: "no"
+  allow_users: ["admin"]  # Customize SSH access
+
+auth:
+  pass_max_days: 365
+  pass_inactive: 30
+
+firewalld:
+  allow_services: ["ssh", "https"]
+
+boot:
+  grub_password: true
+  grub_password_hash: "grub.pbkdf2.sha512.10000.YOUR_HASH..."
+```
+
+### Step 2: Generate GRUB Password Hash (if needed)
+
 ```bash
-# Dry-run with detailed logging
-sudo python3 cis_apply_enhanced.py --profile l2-server --dry-run \
-  --report /tmp/report.json --log-level DEBUG
+grub2-mkpasswd-pbkdf2
+# Enter password when prompted
+# Copy the hash to cis_config.yaml under boot.grub_password_hash
+```
 
-# Apply hardening
+### Step 3: Dry-Run Test
+
+```bash
+sudo python3 cis_apply_enhanced.py --profile l2-server --dry-run \
+  --report /tmp/test-report.json --log-level DEBUG
+```
+
+### Step 4: Apply Hardening
+
+```bash
 sudo python3 cis_apply_enhanced.py --profile l2-server --apply \
   --report /root/hardening.json
+```
 
-# Verify compliance without changes
+### Step 5: Verify Compliance
+
+```bash
 sudo python3 cis_apply_enhanced.py --profile l2-server --verify \
   --report /root/verify.json
 ```
 
-### 2. **New Modules** (4 additional controls)
+## Configuration Highlights
 
-#### modules/boot.py (4 controls)
-- BOOT-1: Restrict GRUB config permissions
-- BOOT-2: Restrict GRUB user.cfg permissions  
-- BOOT-3: GRUB password protection
-- BOOT-4: Secure kernel parameters
-
+### SSH Access Control
 ```yaml
-# Add to cis_config.yaml:
-boot:
-  grub_password: true
-  enforce_kernel_params: true
+ssh:
+  # Uncomment and customize:
+  # allow_users: ["admin", "operator"]
+  # allow_groups: ["sshusers", "wheel"]
+  # deny_users: ["nobody"]
+  banner: "/etc/issue.net"
+  max_startups: "10:30:60"
+  max_sessions: 10
 ```
 
-#### modules/pam.py (3 controls)
-- PAM-1: Password history (prevent reuse)
-- PAM-2: Session timeout
-- PAM-3: Minimum password length
-
+### Password Policy
 ```yaml
-# Add to cis_config.yaml:
-pam:
-  password_remember: 5
-  session_timeout: 600
-  pass_min_len: 14
+auth:
+  pass_max_days: 365
+  pass_min_days: 7
+  pass_warn_age: 14
+  pass_inactive: 30
+  apply_to_existing_users: true
 ```
 
-#### modules/tcpwrappers.py (3 controls)
-- TCP-1: Configure /etc/hosts.allow (whitelist)
-- TCP-2: Configure /etc/hosts.deny (deny-all)
-- TCP-3: Verify TCP Wrappers support
-
+### AIDE File Integrity
 ```yaml
-# Add to cis_config.yaml:
-tcpwrappers:
-  allowed_hosts:
-    - "127.0.0.1"
-    - "localhost"
-    - "10.0.0.0/8"
+aide:
+  initialize_if_missing: false
+  use_systemd_timer: true
+  monitor_audit_tools: true
 ```
 
-### 3. **Documentation**
-
-#### ENHANCEMENT_RECOMMENDATIONS.md
-Complete analysis of all CIS L2 requirements with:
-- Which controls are missing
-- How to implement them
-- Priority order
-- Code templates
-
-#### IMPLEMENTATION_GUIDE.md
-Step-by-step guide to:
-- Integrate new modules
-- Test functionality
-- Validate compliance
-- Phase-based implementation plan
-
-## Current Status
-
-| Metric | Value |
-|--------|-------|
-| **Current L2 Controls** | 26 ✅ |
-| **Passing** | 25/26 (96.2%) |
-| **Compliance** | 100% of mandatory |
-| **With New Modules** | 35+ controls |
-
-## Recommended Next Steps
-
-### Immediate (30 minutes)
-1. Review ENHANCEMENT_RECOMMENDATIONS.md
-2. Test new modules in dry-run mode:
-   ```bash
-   sudo python3 cis_apply.py --profile l2-server --dry-run
-   ```
-
-### Short-term (1-2 hours)
-3. Add new modules to profiles in cis_apply.py
-4. Update cis_config.yaml with new settings
-5. Test with enhanced script:
-   ```bash
-   sudo python3 cis_apply_enhanced.py --profile l2-server --dry-run
-   ```
-
-### Medium-term (4-8 hours)
-6. Implement additional recommended modules:
-   - tcpwrappers (already provided)
-   - pam (already provided)
-   - boot (already provided)
-7. Create remaining modules:
-   - dnf.py (DNF/YUM hardening)
-   - postfix.py (Mail service)
-   - Additional rsyslog rules
-
-## How to Integrate
-
-### Option 1: Gradual Enhancement (Recommended)
-```bash
-# Keep using current script, test new modules separately
-sudo python3 -c "from modules.boot import apply; print(apply({}, True, 'l2-server'))"
-```
-
-### Option 2: Full Replacement
-```bash
-# Backup current
-cp cis_apply.py cis_apply.py.v1
-
-# Use enhanced version
-cp cis_apply_enhanced.py cis_apply.py
-chmod +x cis_apply.py
-```
-
-### Option 3: Side-by-Side
-```bash
-# Keep both versions
-# Use original for current hardening
-# Use enhanced for reporting and monitoring
-sudo ./cis_apply.py --profile l2-server --apply
-sudo ./cis_apply_enhanced.py --profile l2-server --verify
-```
-
-## Testing New Modules
-
-### Test Boot Hardening
-```bash
-sudo python3 << 'EOF'
-from modules.boot import apply
-results = apply({}, dry_run=True, profile='l2-server')
-for r in results:
-    print(f"✅ {r.id}: {r.title}" if r.ok else f"❌ {r.id}: {r.title}")
-EOF
-```
-
-### Test PAM Hardening
-```bash
-sudo python3 << 'EOF'
-from modules.pam import apply
-cfg = {
-    'password_remember': 5,
-    'session_timeout': 600,
-    'pass_min_len': 14
-}
-results = apply(cfg, dry_run=True, profile='l2-server')
-for r in results:
-    print(f"✅ {r.id}: {r.notes}")
-EOF
-```
-
-### Test TCP Wrappers
-```bash
-sudo python3 << 'EOF'
-from modules.tcpwrappers import apply
-cfg = {
-    'allowed_hosts': ['127.0.0.1', 'localhost', '10.0.0.0/8']
-}
-results = apply(cfg, dry_run=True, profile='l2-server')
-for r in results:
-    print(f"✅ {r.id}: {r.notes}")
-EOF
-```
-
-## Configuration Template
-
-Add to your `cis_config.yaml`:
-
+### Audit Configuration
 ```yaml
-boot:
-  grub_password: true
-  enforce_kernel_params: true
+audit:
+  enable_comprehensive_rules: true
+  audit_privileged_commands: true
+  max_log_file_action: "keep_logs"
+  space_left_action: "email"
+```
 
-pam:
-  password_remember: 5           # Prevent reuse of last 5 passwords
-  session_timeout: 600           # 10 minute idle timeout
-  pass_min_len: 14               # Enforce 14 character minimum
+### Bluetooth Removal
+```yaml
+packages:
+  remove_bluetooth: true
+  disable_unnecessary_services: true
+```
 
-tcpwrappers:
-  allowed_hosts:
-    - "127.0.0.1"                # IPv4 localhost
-    - "::1"                       # IPv6 localhost
-    - "192.168.1.0/24"           # Example network
+### su Restriction
+```yaml
+sudo:
+  restrict_su: true
+  su_group: "wheel"
 ```
 
 ## Validation Checklist
 
-After integrating new modules, verify:
+After applying hardening, verify:
 
-- [ ] All new modules are in `modules/` directory
-- [ ] Modules are added to PROFILES in main script
-- [ ] Configuration parameters added to cis_config.yaml
-- [ ] Dry-run completes without errors
-- [ ] All new controls show in report
-- [ ] No conflicting configurations
-- [ ] Files have proper permissions (644 for configs, 600 for sensitive)
-- [ ] Changes can be applied without root errors
-
-## Performance Impact
-
-| Script Version | Modules | Run Time | Report Size |
-|---------------|---------|----------|------------|
-| Original | 18 | ~45 seconds | ~50 KB |
-| With new modules | 21 | ~50 seconds | ~65 KB |
-| Enhanced v2 | 21 | ~52 seconds | ~80 KB |
+- [ ] SSH access still works (test before disconnecting!)
+- [ ] All required services are running
+- [ ] Users can authenticate properly
+- [ ] Audit logs are being generated
+- [ ] AIDE database initialized (if enabled)
+- [ ] No unexpected service disruptions
 
 ## Troubleshooting
 
-### Module not found error
+### SSH Lockout Prevention
+Always test SSH access in a separate terminal before disconnecting:
 ```bash
-# Ensure modules are in correct location
-ls -la modules/*.py
-# Module file must match import name
+# Keep existing session open
+# In new terminal:
+ssh user@server
 ```
 
-### Configuration not loaded
+### Module Errors
 ```bash
-# Verify YAML syntax
+# Check module syntax
+python3 -m py_compile modules/*.py
+
+# Run with debug logging
+sudo python3 cis_apply_enhanced.py --profile l2-server --dry-run --log-level DEBUG
+```
+
+### Configuration Issues
+```bash
+# Validate YAML syntax
 python3 -c "import yaml; yaml.safe_load(open('cis_config.yaml'))"
-# Check indentation (2 spaces, not tabs)
 ```
 
-### Permission denied errors
-```bash
-# All operations must run with sudo
-sudo python3 cis_apply.py ...
+## Files Reference
 
-# Check file permissions after changes
-ls -la /etc/hosts.allow /etc/hosts.deny /boot/grub2/
-```
+| File | Purpose |
+|------|---------|
+| `cis_config.yaml` | Main configuration file |
+| `cis_apply.py` | Standard hardening script |
+| `cis_apply_enhanced.py` | Enhanced script with logging |
+| `modules/` | Hardening modules directory |
+| `CONTROL.csv` | CIS benchmark scan results |
+| `IMPLEMENTATION_GUIDE.md` | Detailed implementation guide |
 
-### Modules not executing
-```bash
-# Check profile definition
-python3 -c "from cis_apply import PROFILES; print(PROFILES['l2-server'])"
-# Add module name to profile list if missing
-```
+## Support
 
-## Support & Questions
-
-For issues or clarifications:
-
-1. **Check the logs:**
-   ```bash
-   tail -100 /var/log/cis_apply.log
-   ```
-
-2. **Review module documentation:**
-   ```bash
-   head -20 modules/boot.py  # See module docstring
-   ```
-
-3. **Run in debug mode:**
-   ```bash
-   sudo python3 cis_apply_enhanced.py --profile l2-server --log-level DEBUG
-   ```
-
-4. **Consult CIS Benchmark:**
-   - See attached PDF for specific control requirements
-   - ENHANCEMENT_RECOMMENDATIONS.md has control mapping
-
-## Summary
-
-Your system is **currently compliant** with CIS L2. These enhancements add:
-- **10+ additional controls** for deeper hardening
-- **Better logging and reporting** for audit trails
-- **Verification capabilities** for ongoing compliance
-- **Boot security** (currently missing)
-- **Network access control** (TCP wrappers)
-- **PAM advanced hardening** (password reuse prevention)
-
-All new modules are production-ready and follow the same patterns as existing code.
+For detailed implementation information, see:
+- [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md) - Step-by-step guide
+- [ENHANCEMENT_RECOMMENDATIONS.md](ENHANCEMENT_RECOMMENDATIONS.md) - Control analysis
+- CIS Oracle Linux 9 Benchmark v2.0.0 documentation
 
