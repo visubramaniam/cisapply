@@ -92,6 +92,41 @@ CONTROL_MAPPING = {
     
     # IPv6
     "IPV6-0": "3.3.1-3.3.2",
+    
+    # PAM Controls
+    "PAM-1": "5.3.1",
+    "PAM-2": "5.3.2",
+    "PAM-3": "5.4.4",
+    "PAM-4": "5.3.3",
+    
+    # Boot Hardening
+    "BOOT-1": "1.4.1",
+    "BOOT-2": "1.4.2",
+    "BOOT-3": "1.4.3",
+    "BOOT-4": "1.3.1",
+    "BOOT-5": "1.3.2",
+    
+    # TCP Wrappers
+    "TCP-1": "3.4.1",
+    "TCP-2": "3.4.2",
+    "TCP-3": "3.4.3",
+    
+    # DNF/Package Manager Security
+    "DNF-1": "1.2.1",
+    "DNF-2": "1.2.2",
+    "DNF-3": "1.2.3",
+    
+    # Postfix/Mail
+    "MAIL-1": "2.2.14",
+    "MAIL-2": "2.2.15",
+}
+
+# Module dependencies for proper ordering
+MODULE_DEPENDENCIES = {
+    "sysctl": ["kernel"],
+    "ssh": ["crypto"],
+    "auth": ["pam"],
+    "firewalld": ["services"],
 }
 
 PROFILES = {
@@ -128,7 +163,63 @@ PROFILES = {
         "cron",
         "aide",
         "mounts",
-        "ipv6"
+        "ipv6",
+        "pam",
+        "boot",
+        "tcpwrappers",
+        "dnf",
+        "postfix"
+    ],
+    "l2-workstation": [
+        "kernel",
+        "sysctl",
+        "crypto",
+        "banners",
+        "ssh",
+        "sudo",
+        "services",
+        "packages",
+        "audit",
+        "logging",
+        "fileperms",
+        "firewalld",
+        "selinux",
+        "auth",
+        "coredumps",
+        "cron",
+        "aide",
+        "mounts",
+        "ipv6",
+        "pam",
+        "boot",
+        "tcpwrappers",
+        "dnf"
+    ],
+    "l3-server": [
+        "kernel",
+        "sysctl",
+        "crypto",
+        "banners",
+        "ssh",
+        "sudo",
+        "services",
+        "packages",
+        "audit",
+        "logging",
+        "fileperms",
+        "firewalld",
+        "selinux",
+        "auth",
+        "coredumps",
+        "cron",
+        "aide",
+        "mounts",
+        "ipv6",
+        "pam",
+        "boot",
+        "tcpwrappers",
+        "dnf",
+        "postfix"
     ]
 }
 
@@ -278,6 +369,211 @@ def print_summary(report: Dict[str, Any]):
         print(f"  Already Compliant:   {remediation.get('already_compliant', 0)}")
         print(f"  Failed:              {remediation.get('failed', 0)}")
         print(f"{'='*60}\n")
+    
+    # Show reboot requirements if any
+    reboot_required = report.get("reboot_required", False)
+    if reboot_required:
+        print("⚠️  REBOOT REQUIRED: Some changes require a system reboot to take effect.")
+        print(f"{'='*60}\n")
+
+def generate_html_report(report: Dict[str, Any], html_path: str) -> bool:
+    """Generate HTML compliance report"""
+    try:
+        exec_data = report.get("execution", {})
+        total = exec_data.get("total_controls", 0)
+        passed = exec_data.get("passed", 0)
+        failed = exec_data.get("failed", 0)
+        compliance = exec_data.get("compliance_percentage", 0)
+        remediation = report.get("remediation", {})
+        
+        # Generate status color
+        status_color = "#28a745" if report.get("ok") else "#dc3545"
+        compliance_color = "#28a745" if compliance >= 90 else ("#ffc107" if compliance >= 70 else "#dc3545")
+        
+        html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIS Compliance Report - {report.get('profile', 'unknown').upper()}</title>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }}
+        .container {{ max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+        h1 {{ color: #333; border-bottom: 3px solid #0066cc; padding-bottom: 10px; }}
+        h2 {{ color: #555; margin-top: 30px; }}
+        .summary {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }}
+        .card {{ background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; border-left: 4px solid #0066cc; }}
+        .card.passed {{ border-left-color: #28a745; }}
+        .card.failed {{ border-left-color: #dc3545; }}
+        .card.remediated {{ border-left-color: #17a2b8; }}
+        .card h3 {{ margin: 0 0 10px 0; color: #666; font-size: 14px; text-transform: uppercase; }}
+        .card .value {{ font-size: 36px; font-weight: bold; color: #333; }}
+        .status {{ display: inline-block; padding: 5px 15px; border-radius: 20px; color: white; font-weight: bold; background: {status_color}; }}
+        .compliance {{ font-size: 48px; font-weight: bold; color: {compliance_color}; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+        th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }}
+        th {{ background: #f8f9fa; font-weight: 600; }}
+        tr:hover {{ background: #f5f5f5; }}
+        .pass {{ color: #28a745; }}
+        .fail {{ color: #dc3545; }}
+        .changed {{ color: #17a2b8; font-weight: bold; }}
+        .metadata {{ color: #666; font-size: 14px; margin-bottom: 20px; }}
+        .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ CIS Compliance Report</h1>
+        <div class="metadata">
+            <strong>Profile:</strong> {report.get('profile', 'unknown').upper()} |
+            <strong>Hostname:</strong> {report.get('metadata', {}).get('hostname', 'N/A')} |
+            <strong>Generated:</strong> {report.get('metadata', {}).get('timestamp', 'N/A')} |
+            <strong>Benchmark:</strong> {report.get('metadata', {}).get('cis_benchmark', 'N/A')}
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <div class="compliance">{compliance}%</div>
+            <div style="color: #666; margin-top: 5px;">Compliance Score</div>
+            <div style="margin-top: 15px;">
+                <span class="status">{'PASS' if report.get('ok') else 'FAIL'}</span>
+            </div>
+        </div>
+        
+        <div class="summary">
+            <div class="card">
+                <h3>Total Controls</h3>
+                <div class="value">{total}</div>
+            </div>
+            <div class="card passed">
+                <h3>Passed</h3>
+                <div class="value">{passed}</div>
+            </div>
+            <div class="card failed">
+                <h3>Failed</h3>
+                <div class="value">{failed}</div>
+            </div>
+            <div class="card remediated">
+                <h3>Remediated</h3>
+                <div class="value">{remediation.get('remediated', 0)}</div>
+            </div>
+        </div>
+        
+        <h2>Control Details</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Control ID</th>
+                    <th>CIS Ref</th>
+                    <th>Title</th>
+                    <th>Changed</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+"""
+        
+        for r in report.get("results", []):
+            status_icon = "✅" if r.get("ok") else "❌"
+            status_class = "pass" if r.get("ok") else "fail"
+            changed_text = "Yes" if r.get("changed") else "No"
+            changed_class = "changed" if r.get("changed") else ""
+            cis_ref = r.get("cis_control", CONTROL_MAPPING.get(r.get("id", ""), "N/A"))
+            notes = r.get("notes", "")[:100] + ("..." if len(r.get("notes", "")) > 100 else "")
+            
+            html_content += f"""                <tr>
+                    <td class="{status_class}">{status_icon}</td>
+                    <td><code>{r.get('id', 'N/A')}</code></td>
+                    <td>{cis_ref}</td>
+                    <td>{r.get('title', 'N/A')}</td>
+                    <td class="{changed_class}">{changed_text}</td>
+                    <td>{notes}</td>
+                </tr>
+"""
+        
+        html_content += f"""            </tbody>
+        </table>
+        
+        <div class="footer">
+            Generated by CIS Oracle Linux 9 Hardening Tool v2.0 |
+            Mode: {'DRY-RUN' if report.get('dry_run') else 'APPLY'} |
+            Kernel: {report.get('metadata', {}).get('kernel', 'N/A')}
+        </div>
+    </div>
+</body>
+</html>
+"""
+        
+        os.makedirs(os.path.dirname(html_path) or ".", exist_ok=True)
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(html_content)
+        logger.info(f"HTML report saved to {html_path}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to generate HTML report: {e}")
+        return False
+
+def detect_drift(profile: str, cfg: Dict[str, Any], baseline_path: str) -> Dict[str, Any]:
+    """
+    Compare current system state with a baseline report.
+    Returns drift information.
+    """
+    drift_results = {
+        "has_drift": False,
+        "drifted_controls": [],
+        "new_failures": [],
+        "new_passes": [],
+        "baseline_timestamp": None,
+        "current_timestamp": datetime.now().isoformat(),
+    }
+    
+    if not os.path.exists(baseline_path):
+        logger.warning(f"Baseline file not found: {baseline_path}")
+        return {"error": "Baseline file not found", "has_drift": None}
+    
+    try:
+        with open(baseline_path, "r", encoding="utf-8") as f:
+            baseline = json.load(f)
+        
+        drift_results["baseline_timestamp"] = baseline.get("metadata", {}).get("timestamp")
+        
+        # Run current state check (dry-run mode)
+        current_results, _ = apply_modules(profile, cfg, dry_run=True)
+        
+        # Build lookup for baseline results
+        baseline_by_id = {}
+        for r in baseline.get("results", []):
+            r_id = r.get("id") or r.get("control_id")
+            if r_id:
+                baseline_by_id[r_id] = r
+        
+        # Compare current with baseline
+        for current in current_results:
+            control_id = current.id if hasattr(current, 'id') else current.get('id')
+            current_ok = current.ok if hasattr(current, 'ok') else current.get('ok')
+            
+            if control_id in baseline_by_id:
+                baseline_ok = baseline_by_id[control_id].get("ok")
+                
+                if baseline_ok != current_ok:
+                    drift_results["has_drift"] = True
+                    drift_results["drifted_controls"].append({
+                        "id": control_id,
+                        "title": current.title if hasattr(current, 'title') else current.get('title'),
+                        "baseline_status": "pass" if baseline_ok else "fail",
+                        "current_status": "pass" if current_ok else "fail",
+                    })
+                    
+                    if baseline_ok and not current_ok:
+                        drift_results["new_failures"].append(control_id)
+                    elif not baseline_ok and current_ok:
+                        drift_results["new_passes"].append(control_id)
+        
+        return drift_results
+        
+    except Exception as e:
+        logger.error(f"Error detecting drift: {e}")
+        return {"error": str(e), "has_drift": None}
 
 def validate_permissions():
     """Ensure script runs with sufficient privileges"""
@@ -290,8 +586,10 @@ def main():
     ap = argparse.ArgumentParser(
         description="CIS Oracle Enterprise Linux 9 Hardening Tool",
         epilog="Examples:\n"
-               "  sudo ./cis_apply.py --profile l2-server --dry-run --report /tmp/report.json\n"
-               "  sudo ./cis_apply.py --profile l2-server --apply --report /tmp/report.json\n",
+               "  sudo ./cis_apply_enhanced.py --profile l2-server --dry-run --report /tmp/report.json\n"
+               "  sudo ./cis_apply_enhanced.py --profile l2-server --apply --report /tmp/report.json\n"
+               "  sudo ./cis_apply_enhanced.py --profile l2-server --detect-drift --baseline /tmp/baseline.json\n"
+               "  sudo ./cis_apply_enhanced.py --profile l2-server --apply --html-report /tmp/report.html\n",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     
@@ -322,9 +620,24 @@ def main():
         help="Save report to JSON file"
     )
     ap.add_argument(
+        "--html-report",
+        default="",
+        help="Save report to HTML file"
+    )
+    ap.add_argument(
         "--verify",
         action="store_true",
         help="Verify compliance without applying changes"
+    )
+    ap.add_argument(
+        "--detect-drift",
+        action="store_true",
+        help="Detect configuration drift from baseline"
+    )
+    ap.add_argument(
+        "--baseline",
+        default="",
+        help="Baseline JSON report for drift detection"
     )
     ap.add_argument(
         "--log-level",
@@ -339,7 +652,7 @@ def main():
     logger.setLevel(getattr(logging, args.log_level))
     
     # Validate mode selection
-    if not args.dry_run and not args.apply and not args.verify:
+    if not args.dry_run and not args.apply and not args.verify and not args.detect_drift:
         args.dry_run = True
         logger.info("No mode specified; defaulting to --dry-run")
     
@@ -352,15 +665,52 @@ def main():
     # Get system information
     sys_info = get_system_info()
     
+    # Handle drift detection mode
+    if args.detect_drift:
+        if not args.baseline:
+            print("ERROR: --baseline required for drift detection", file=sys.stderr)
+            sys.exit(1)
+        
+        drift = detect_drift(args.profile, cfg, args.baseline)
+        
+        if drift.get("error"):
+            print(f"ERROR: {drift['error']}", file=sys.stderr)
+            sys.exit(1)
+        
+        print(f"\n{'='*60}")
+        print("Drift Detection Report")
+        print(f"{'='*60}")
+        print(f"Baseline: {args.baseline}")
+        print(f"Baseline Timestamp: {drift.get('baseline_timestamp', 'N/A')}")
+        print(f"Current Timestamp:  {drift.get('current_timestamp', 'N/A')}")
+        print(f"Drift Detected:     {'YES' if drift.get('has_drift') else 'NO'}")
+        
+        if drift.get("has_drift"):
+            print(f"\nDrifted Controls ({len(drift.get('drifted_controls', []))}):")
+            for d in drift.get("drifted_controls", []):
+                print(f"  {d['id']:20} {d['baseline_status']} -> {d['current_status']} : {d['title']}")
+            
+            if drift.get("new_failures"):
+                print(f"\n⚠️  New Failures: {', '.join(drift['new_failures'])}")
+            if drift.get("new_passes"):
+                print(f"\n✅ New Passes: {', '.join(drift['new_passes'])}")
+        
+        print(f"{'='*60}\n")
+        sys.exit(0 if not drift.get("has_drift") else 1)
+    
     # Apply hardening
     results, overall_ok = apply_modules(args.profile, cfg, dry_run=args.dry_run or args.verify)
     
     # Generate report
     report = generate_report(args.profile, args.dry_run or args.verify, results, overall_ok, sys_info)
     
-    # Save report if specified
+    # Save JSON report if specified
     if args.report:
         save_report(report, args.report)
+    
+    # Save HTML report if specified
+    if args.html_report:
+        generate_html_report(report, args.html_report)
     
     # Print summary
     print_summary(report)

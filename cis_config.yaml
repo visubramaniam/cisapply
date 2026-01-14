@@ -6,6 +6,10 @@ firewalld:
   zone: "public"
   allow_services: ["ssh", "https"]
   allow_ports: []
+  # Loopback traffic rules (CIS 3.4.3.x)
+  configure_loopback: true
+  # Mask nftables service (CIS 3.4.2.x)
+  mask_nftables: true
 
 ssh:
   permit_root_login: "no"
@@ -17,9 +21,22 @@ ssh:
   client_alive_count_max: 0
   allow_tcp_forwarding: "no"
   allow_agent_forwarding: "no"
-  ciphers: ""
-  macs: ""
-  kex_algorithms: ""
+  # SSH Cryptographic Algorithms (CIS 5.2.x - SSH Crypto Hardening)
+  ciphers: "aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr"
+  macs: "hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512,hmac-sha2-256"
+  kex_algorithms: "curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp521,ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group-exchange-sha256"
+  # Additional SSH hardening (CIS 5.2.x)
+  banner: "/etc/issue.net"
+  log_level: "INFO"
+  max_startups: "10:30:60"
+  max_sessions: 10
+  disable_forwarding: "yes"
+  gssapi_authentication: "no"
+  # Access control - uncomment and customize as needed
+  # allow_users: ["admin", "operator"]
+  # allow_groups: ["sshusers", "wheel"]
+  # deny_users: ["nobody"]
+  # deny_groups: ["nogroup"]
 
 auth:
   pwquality_minlen: 14
@@ -28,13 +45,23 @@ auth:
   pwquality_ucredit: -1
   pwquality_lcredit: -1
   pwquality_ocredit: -1
+  pwquality_maxrepeat: 3
+  pwquality_maxsequence: 3
+  pwquality_difok: 3
+  pwhistory_remember: 5
   lockout_deny: 5
   lockout_fail_interval: 900
   lockout_unlock_time: 900
+  root_unlock_time: 60
   pass_max_days: 365
   pass_min_days: 7
   pass_warn_age: 14
+  # Password inactive days (CIS 5.6.1.4)
+  pass_inactive: 30
+  # Apply password aging to existing users (CIS 5.6.1.x)
+  apply_to_existing_users: true
   umask: "027"
+  tmout: 900
 
 selinux:
   enforce: true
@@ -43,9 +70,118 @@ mounts:
   enable_tmp_mount_units: true
   tmp_size: "1G"
   var_tmp_size: "1G"
+  # Mount options for specific partitions (CIS 1.1.x)
+  dev_shm_options: ["noexec", "nodev", "nosuid"]
+  home_options: ["nodev", "nosuid"]
+  var_options: ["nodev", "nosuid"]
+  var_log_audit_options: ["nodev", "nosuid", "noexec"]
 
 ipv6:
   disable: false
 
+# AIDE - File Integrity Monitoring (CIS 6.2.x)
 aide:
   initialize_if_missing: false
+  schedule_daily_check: true
+  email_alerts: false
+  alert_email: "root@localhost"
+  # Use systemd timer instead of cron (CIS 6.2.1.2)
+  use_systemd_timer: true
+  # Monitor audit tools for integrity (CIS 6.2.1.3)
+  monitor_audit_tools: true
+
+# PAM Configuration (CIS 5.3.x)
+pam:
+  password_remember: 5
+  session_timeout: 600
+  pass_min_len: 14
+  # Enable use_authtok in pam_pwhistory (CIS 5.3.3.x)
+  use_authtok: true
+
+# Coredumps Configuration (CIS 1.5.x)
+coredumps:
+  # Disable coredumps via systemd-coredump
+  disable_systemd_coredump: true
+  storage: "none"
+  process_size_max: 0
+
+# Boot/Grub Hardening (CIS 1.3.x, 1.4.x)
+boot:
+  grub_password: true
+  enforce_kernel_params: true
+  # GRUB password hash - generate with: grub2-mkpasswd-pbkdf2
+  grub_password_hash: "grub.pbkdf2.sha512.10000.0F58233B297A82FF95027256819AA84F48CE0046715814F1E07D0E6F219479E5D0A1CBAA25E68823FF4DA070CA856B5DEA437C6185A26FCA8FE5403D5D1CE369.35A0DF2B017974873B30B5979EA5A365F242D6D2A0D37581618F81FAA1A0F7D25CB05B9BF97205820E9ACFF895A0FC02475DF3D728AF64E2FA834E274E120529"
+  # Fix boot file permissions (CIS 1.4.2)
+  fix_boot_permissions: true
+
+# Sudo Configuration (CIS 5.3.7)
+sudo:
+  use_pty: true
+  logfile: "/var/log/sudo.log"
+  log_host: true
+  log_year: true
+  log_input: true
+  log_output: true
+  timestamp_timeout: 5
+  requiretty: true
+  env_reset: true
+  # Restrict su command to wheel group (CIS 5.3.7)
+  restrict_su: true
+  su_group: "wheel"
+
+# Cron/At Configuration (CIS 5.1.x)
+cron:
+  # Ensure cronie and at packages are installed
+  install_cronie: true
+  install_at: true
+  # Fix cron.deny and at.deny permissions
+  fix_deny_permissions: true
+
+# Audit Configuration (CIS 4.1.x)
+audit:
+  # Enable comprehensive audit rules
+  enable_comprehensive_rules: true
+  # Audit privileged commands automatically
+  audit_privileged_commands: true
+  # auditd.conf settings
+  max_log_file_action: "keep_logs"
+  space_left_action: "email"
+  admin_space_left_action: "halt"
+  disk_full_action: "halt"
+  disk_error_action: "halt"
+
+# Packages/Services (CIS 2.x)
+packages:
+  # Remove bluetooth packages (CIS 2.1.x)
+  remove_bluetooth: true
+  # Disable unnecessary services
+  disable_unnecessary_services: true
+
+# Logging Configuration (CIS 4.2.x)
+logging:
+  # Fix log file permissions
+  fix_logfile_permissions: true
+  # Configure systemd-journal-upload
+  configure_journal_upload: true
+  journal_upload_url: ""  # Set remote URL if needed
+
+# TCP Wrappers (CIS 3.4.x)
+tcpwrappers:
+  allowed_hosts:
+    - "127.0.0.1"
+    - "localhost"
+  allow_all: false
+
+# DNF/YUM Security (CIS 1.2.x)
+dnf:
+  enable_automatic_updates: false
+
+# Postfix/Mail Configuration (CIS 2.2.x)
+postfix:
+  remove_unused_mail_services: false
+
+# Rsyslog Configuration (CIS 4.2.x)
+rsyslog:
+  enable_forwarding: false
+  forwarding_server: ""
+  auth_logging: true

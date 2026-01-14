@@ -136,6 +136,7 @@ def apply(cfg: Dict[str, Any], dry_run: bool, profile: str) -> List[ActionResult
     try:
         enforce_grub_password = cfg.get("grub_password", True)
         user_cfg = "/boot/grub2/user.cfg"
+        grub_password_hash = cfg.get("grub_password_hash", None)
         
         if enforce_grub_password:
             # Check if superuser is set in user.cfg
@@ -143,15 +144,28 @@ def apply(cfg: Dict[str, Any], dry_run: bool, profile: str) -> List[ActionResult
             if os.path.exists(user_cfg):
                 with open(user_cfg, "r", encoding="utf-8") as f:
                     content = f.read()
-                    if "superusers" in content:
+                    if "GRUB2_PASSWORD=" in content and "grub.pbkdf2.sha512" in content:
                         has_password = True
-                        notes = "GRUB superuser already configured"
+                        notes = "GRUB password protection already configured"
             
             if not has_password:
-                notes = "GRUB password not configured - manual intervention required"
-                ok = True  # This requires user interaction (grub-mkpasswd-pbkdf2)
-                commands.append("grub-mkpasswd-pbkdf2  # Generate password hash")
-                commands.append("# Add to /etc/grub.d/40_custom or /boot/grub2/user.cfg")
+                if grub_password_hash:
+                    # Write the password hash
+                    user_cfg_content = f"GRUB2_PASSWORD={grub_password_hash}\n"
+                    if not dry_run:
+                        with open(user_cfg, "w", encoding="utf-8") as f:
+                            f.write(user_cfg_content)
+                        os.chmod(user_cfg, 0o600)
+                        changed = True
+                        notes = "GRUB password protection configured"
+                        files.append(user_cfg)
+                    else:
+                        notes = "DRY-RUN: Would configure GRUB password"
+                        changed = True
+                else:
+                    notes = "GRUB password not configured - set grub_password_hash in config or run: grub2-mkpasswd-pbkdf2"
+                    commands.append("grub2-mkpasswd-pbkdf2  # Generate password hash")
+                    commands.append("# Add GRUB2_PASSWORD=<hash> to /boot/grub2/user.cfg")
         else:
             notes = "GRUB password protection disabled in configuration"
         
@@ -175,6 +189,48 @@ def apply(cfg: Dict[str, Any], dry_run: bool, profile: str) -> List[ActionResult
             commands=[],
             files=[]
         ))
+    
+    # Control: Ensure ownership and permissions of files in /boot/*
+    control_id = "BOOT-3b"
+    title = "Ensure ownership and permissions of /boot/* files"
+    changed = False
+    ok = True
+    notes = []
+    
+    import glob
+    boot_files = glob.glob("/boot/*") + glob.glob("/boot/grub2/*")
+    
+    for bf in boot_files:
+        if os.path.exists(bf) and os.path.isfile(bf):
+            try:
+                st = os.stat(bf)
+                mode = st.st_mode & 0o777
+                uid = st.st_uid
+                gid = st.st_gid
+                
+                needs_update = False
+                if mode != 0o600 and bf.endswith(('.cfg', '.conf')):
+                    needs_update = True
+                if uid != 0 or gid != 0:
+                    needs_update = True
+                
+                if needs_update and not dry_run:
+                    os.chown(bf, 0, 0)
+                    if bf.endswith(('.cfg', '.conf')):
+                        os.chmod(bf, 0o600)
+                    changed = True
+                    notes.append(f"Fixed {bf}")
+            except Exception:
+                pass
+    
+    results.append(ActionResult(
+        id=control_id,
+        title=title,
+        changed=changed,
+        ok=ok,
+        notes="; ".join(notes) if notes else "Boot file permissions OK",
+        files=boot_files[:5]  # Limit to first 5
+    ))
     
     # Control: Ensure audit and audit_backlog_limit kernel parameters in /etc/default/grub
     control_id = "BOOT-4"

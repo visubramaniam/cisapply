@@ -24,6 +24,11 @@ L1 = {
  "net.ipv6.conf.default.accept_ra": "0",
  "net.ipv6.conf.all.accept_redirects": "0",
  "net.ipv6.conf.default.accept_redirects": "0",
+ # IPv6 source route settings - CIS requirement
+ "net.ipv6.conf.all.accept_source_route": "0",
+ "net.ipv6.conf.default.accept_source_route": "0",
+ # IPv6 forwarding - disable by default
+ "net.ipv6.conf.all.forwarding": "0",
 }
 
 L2 = {
@@ -33,6 +38,10 @@ L2 = {
  "fs.protected_hardlinks": "1",
  "fs.protected_symlinks": "1",
  "net.ipv4.tcp_rfc1337": "1",
+ # Additional L2 hardening
+ "kernel.perf_event_paranoid": "2",
+ "kernel.core_uses_pid": "1",
+ "kernel.sysrq": "0",
 }
 
 def _content(kv: dict) -> str:
@@ -42,24 +51,57 @@ def _content(kv: dict) -> str:
     return "\n".join(lines)+"\n"
 
 def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
+    results = []
+    
     kv=dict(L1)
-    if profile.startswith("l2"):
+    if profile.startswith("l2") or profile.startswith("l3"):
         kv.update(L2)
+    
+    # Allow config overrides
+    for key, default_val in list(kv.items()):
+        cfg_key = key.replace(".", "_")
+        if cfg_key in cfg:
+            kv[key] = str(cfg[cfg_key])
+    
     path="/etc/sysctl.d/99-cis-hardening.conf"
     content=_content(kv)
     changed=True
     if os.path.exists(path):
         with open(path,"r",encoding="utf-8",errors="ignore") as f:
             changed = (f.read()!=content)
+    
     cmds=[["bash","-lc", f"cat > {shlex.quote(path)} <<'EOF'\n{content}EOF\nchmod 644 {shlex.quote(path)}"],
           ["sysctl","--system"]]
+    
     if dry_run:
-        return [ActionResult("SYSCTL-1","Apply CIS sysctl hardening", changed, True,
+        results.append(ActionResult("SYSCTL-1","Apply CIS sysctl hardening", changed, True,
                              notes="DRY-RUN: would write sysctl conf and run sysctl --system",
-                             commands=[shlex.join(c) for c in cmds], files=[path])]
-    out=[]; ok=True
-    for c in cmds:
-        cp=run(c); out.append((cp.stdout+cp.stderr).strip()); ok = ok and (cp.returncode==0)
-    return [ActionResult("SYSCTL-1","Apply CIS sysctl hardening", True if changed else False, ok,
-                         notes="\n".join(o for o in out if o),
-                         commands=[shlex.join(c) for c in cmds], files=[path])]
+                             commands=[shlex.join(c) for c in cmds], files=[path]))
+    else:
+        out=[]; ok=True
+        for c in cmds:
+            cp=run(c); out.append((cp.stdout+cp.stderr).strip()); ok = ok and (cp.returncode==0)
+        results.append(ActionResult("SYSCTL-1","Apply CIS sysctl hardening", True if changed else False, ok,
+                             notes="\n".join(o for o in out if o),
+                             commands=[shlex.join(c) for c in cmds], files=[path]))
+    
+    # Also ensure kernel.yama.ptrace_scope is set at runtime
+    control_id = "SYSCTL-2"
+    title = "Ensure kernel.yama.ptrace_scope is set"
+    
+    cmd_check = ["sysctl", "kernel.yama.ptrace_scope"]
+    if not dry_run:
+        cp = run(cmd_check)
+        current_val = cp.stdout.strip().split("=")[-1].strip() if cp.stdout else "unknown"
+        if current_val != "1":
+            run(["sysctl", "-w", "kernel.yama.ptrace_scope=1"])
+            results.append(ActionResult(control_id, title, True, True,
+                                        notes=f"Set kernel.yama.ptrace_scope from {current_val} to 1"))
+        else:
+            results.append(ActionResult(control_id, title, False, True,
+                                        notes="kernel.yama.ptrace_scope already set to 1"))
+    else:
+        results.append(ActionResult(control_id, title, True, True,
+                                    notes="DRY-RUN: Would verify kernel.yama.ptrace_scope=1"))
+    
+    return results

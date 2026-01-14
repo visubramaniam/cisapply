@@ -49,9 +49,61 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
             c,n = ensure_perm(jf, 0o640, 0, 0, dry_run)
             results.append(ActionResult(f"LOG-8-{jf}",f"Set permissions on {jf}", c, True, notes=n, files=[jf]))
     
-    # Disable systemd-journal-upload and journal-remote if present
-    ensure_pkg(["systemd-journal-remote"], dry_run, results, "LOG-9", "Install systemd-journal-remote")
-    ensure_service_enabled("systemd-journal-remote", dry_run, results, "LOG-10", "Disable systemd-journal-remote", state="disable")
-    ensure_service_enabled("systemd-journal-upload", dry_run, results, "LOG-11", "Disable systemd-journal-upload", state="disable")
+    # Control: Fix /var/log/sssd permissions if exists
+    control_id = "LOG-9"
+    title = "Set permissions on /var/log/sssd directory"
+    
+    sssd_log_dir = "/var/log/sssd"
+    if os.path.exists(sssd_log_dir):
+        c, n = ensure_perm(sssd_log_dir, 0o750, 0, 0, dry_run)
+        results.append(ActionResult(control_id, title, c, True, notes=n, files=[sssd_log_dir]))
+    else:
+        results.append(ActionResult(control_id, title, False, True, notes="/var/log/sssd does not exist"))
+    
+    # Control: Fix permissions on all log files
+    control_id = "LOG-10"
+    title = "Ensure permissions on all logfiles"
+    changed = False
+    notes = []
+    
+    # Get all log files excluding special ones
+    excluded_patterns = ['lastlog', 'wtmp', 'btmp', 'journal', 'gdm', 'sssd']
+    
+    for log_file in glob.glob("/var/log/*"):
+        if os.path.isfile(log_file):
+            # Skip excluded files
+            if any(excl in log_file for excl in excluded_patterns):
+                continue
+            
+            st = os.stat(log_file)
+            mode = st.st_mode & 0o777
+            
+            # Log files should not be world-readable
+            if mode & 0o004:  # World readable
+                if not dry_run:
+                    os.chmod(log_file, mode & ~0o007)  # Remove world permissions
+                    changed = True
+                    notes.append(f"Fixed {log_file}")
+    
+    results.append(ActionResult(control_id, title, changed, True, 
+                                notes="; ".join(notes) if notes else "Log file permissions OK"))
+    
+    # Control: Configure systemd-journal-upload
+    control_id = "LOG-11"
+    title = "Ensure systemd-journal-upload is configured or disabled"
+    
+    # Check if journal-upload service should be enabled
+    journal_upload_enabled = cfg.get("journal_upload_enabled", False)
+    
+    if journal_upload_enabled:
+        ensure_pkg(["systemd-journal-remote"], dry_run, results, "LOG-11a", "Install systemd-journal-remote")
+        ensure_service_enabled("systemd-journal-upload", dry_run, results, control_id, title)
+    else:
+        # Disable journal-upload if not needed
+        if not dry_run:
+            run(["systemctl", "stop", "systemd-journal-upload"])
+            run(["systemctl", "disable", "systemd-journal-upload"])
+        results.append(ActionResult(control_id, title, True, True, 
+                                    notes="systemd-journal-upload disabled (not configured for remote logging)"))
     
     return results

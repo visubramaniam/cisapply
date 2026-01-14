@@ -26,7 +26,7 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
     # Configure password history
     pwh="/etc/security/pwhistory.conf"
     ph_changes=[]
-    ph_changes.append(ensure_kv_in_file(pwh,"remember", str(cfg.get("pwhistory_remember",5)), sep=" = ", dry_run=dry_run))
+    ph_changes.append(ensure_kv_in_file(pwh,"remember", str(cfg.get("pwhistory_remember",24)), sep=" = ", dry_run=dry_run))
     ph_changes.append(ensure_kv_in_file(pwh,"enforce_for_root", "", sep="", dry_run=dry_run))
     results.append(ActionResult("AUTH-1b","Configure password history (pwhistory.conf)", any(c for c,_ in ph_changes), True,
                                 notes="; ".join(n for _,n in ph_changes), files=[pwh]))
@@ -37,8 +37,53 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
     ch.append(ensure_kv_in_file(ld,"PASS_MAX_DAYS", str(cfg.get("pass_max_days",365)), sep="\t", dry_run=dry_run))
     ch.append(ensure_kv_in_file(ld,"PASS_MIN_DAYS", str(cfg.get("pass_min_days",1)), sep="\t", dry_run=dry_run))
     ch.append(ensure_kv_in_file(ld,"PASS_WARN_AGE", str(cfg.get("pass_warn_age",14)), sep="\t", dry_run=dry_run))
+    ch.append(ensure_kv_in_file(ld,"INACTIVE", str(cfg.get("inactive_days",30)), sep="\t", dry_run=dry_run))
     results.append(ActionResult("AUTH-2","Configure password aging (login.defs)", any(c for c,_ in ch), True,
                                 notes="; ".join(n for _,n in ch), files=[ld]))
+
+    # Set default inactive days for new users using useradd
+    inactive_days = int(cfg.get("inactive_days", 30))
+    cmd_inactive = ["useradd", "-D", "-f", str(inactive_days)]
+    if dry_run:
+        results.append(ActionResult("AUTH-2a", "Set default inactive period for new users", True, True,
+                                    notes=f"DRY-RUN: would run {shlex.join(cmd_inactive)}",
+                                    commands=[shlex.join(cmd_inactive)]))
+    else:
+        cp = run(cmd_inactive)
+        results.append(ActionResult("AUTH-2a", "Set default inactive period for new users", True, cp.returncode == 0,
+                                    notes=(cp.stdout + cp.stderr).strip() or f"Set INACTIVE to {inactive_days} days",
+                                    commands=[shlex.join(cmd_inactive)]))
+
+    # Fix existing users' password aging if needed
+    control_id = "AUTH-2b"
+    title = "Ensure password aging on existing user accounts"
+    pass_max_days = int(cfg.get("pass_max_days", 365))
+    
+    try:
+        # Get list of users with UID >= 1000 that have passwords
+        cmd_getusers = ["bash", "-c", "awk -F: '($3 >= 1000 && $2 != \"*\" && $2 != \"!\" && $2 != \"!!\") {print $1}' /etc/shadow"]
+        cp_users = run(cmd_getusers)
+        users = cp_users.stdout.strip().split("\n") if cp_users.stdout.strip() else []
+        
+        modified_users = []
+        for user in users:
+            if user:
+                cmd_chage = ["chage", "-M", str(pass_max_days), "-I", str(inactive_days), user]
+                if not dry_run:
+                    run(cmd_chage)
+                    modified_users.append(user)
+        
+        if modified_users:
+            results.append(ActionResult(control_id, title, True, True,
+                                        notes=f"Applied password aging to users: {', '.join(modified_users)}"))
+        elif users:
+            results.append(ActionResult(control_id, title, True, True,
+                                        notes=f"DRY-RUN: Would apply password aging to: {', '.join(users)}"))
+        else:
+            results.append(ActionResult(control_id, title, False, True,
+                                        notes="No applicable user accounts found"))
+    except Exception as e:
+        results.append(ActionResult(control_id, title, False, False, notes=f"Error: {str(e)}"))
 
     # Set default umask
     um="/etc/profile.d/99-cis-umask.sh"

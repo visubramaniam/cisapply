@@ -36,14 +36,67 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str) -> List[ActionResult]
         results.append(ActionResult("FW-3","Configure firewalld", False, True,
                                     notes="DRY-RUN: would run\n" + "\n".join(shlex.join(c) for c in cmds),
                                     commands=[shlex.join(c) for c in cmds]))
-        return results
+    else:
+        out=[]
+        ok=True
+        for c in cmds:
+            cp=run(c)
+            out.append((cp.stdout+cp.stderr).strip())
+            ok = ok and (cp.returncode==0)
+        results.append(ActionResult("FW-3","Configure firewalld", True, ok, notes="\n".join(o for o in out if o),
+                                    commands=[shlex.join(c) for c in cmds]))
 
-    out=[]
-    ok=True
-    for c in cmds:
-        cp=run(c)
-        out.append((cp.stdout+cp.stderr).strip())
-        ok = ok and (cp.returncode==0)
-    results.append(ActionResult("FW-3","Configure firewalld", True, ok, notes="\n".join(o for o in out if o),
-                                commands=[shlex.join(c) for c in cmds]))
+    # Control: Ensure nftables is masked if firewalld is in use
+    control_id = "FW-4"
+    title = "Ensure nftables service is masked (firewalld manages nftables)"
+    
+    cmd_mask = ["systemctl", "mask", "nftables"]
+    if dry_run:
+        results.append(ActionResult(control_id, title, True, True,
+                                    notes="DRY-RUN: Would mask nftables service",
+                                    commands=[shlex.join(cmd_mask)]))
+    else:
+        cp = run(cmd_mask)
+        results.append(ActionResult(control_id, title, True, cp.returncode == 0,
+                                    notes=(cp.stdout + cp.stderr).strip() or "nftables service masked",
+                                    commands=[shlex.join(cmd_mask)]))
+
+    # Control: Configure loopback traffic rules
+    control_id = "FW-5"
+    title = "Configure firewalld loopback traffic rules"
+    
+    # Firewalld direct rules for loopback
+    # Allow all traffic on loopback interface
+    # Block traffic from 127.0.0.0/8 on non-loopback interfaces
+    loopback_cmds = [
+        # IPv4 loopback rules
+        ["firewall-cmd", "--permanent", "--direct", "--add-rule", "ipv4", "filter", "INPUT", "0", "-i", "lo", "-j", "ACCEPT"],
+        ["firewall-cmd", "--permanent", "--direct", "--add-rule", "ipv4", "filter", "OUTPUT", "0", "-o", "lo", "-j", "ACCEPT"],
+        ["firewall-cmd", "--permanent", "--direct", "--add-rule", "ipv4", "filter", "INPUT", "1", "-s", "127.0.0.0/8", "!", "-i", "lo", "-j", "DROP"],
+        # IPv6 loopback rules
+        ["firewall-cmd", "--permanent", "--direct", "--add-rule", "ipv6", "filter", "INPUT", "0", "-i", "lo", "-j", "ACCEPT"],
+        ["firewall-cmd", "--permanent", "--direct", "--add-rule", "ipv6", "filter", "OUTPUT", "0", "-o", "lo", "-j", "ACCEPT"],
+        ["firewall-cmd", "--permanent", "--direct", "--add-rule", "ipv6", "filter", "INPUT", "1", "-s", "::1", "!", "-i", "lo", "-j", "DROP"],
+    ]
+    
+    if dry_run:
+        results.append(ActionResult(control_id, title, True, True,
+                                    notes="DRY-RUN: Would configure loopback traffic rules",
+                                    commands=[shlex.join(c) for c in loopback_cmds]))
+    else:
+        ok = True
+        out = []
+        for cmd in loopback_cmds:
+            cp = run(cmd)
+            # Rule may already exist - that's ok
+            if cp.returncode != 0 and "ALREADY_ENABLED" not in (cp.stderr or ""):
+                out.append(f"{shlex.join(cmd)}: {(cp.stdout + cp.stderr).strip()}")
+        
+        # Reload firewalld to apply changes
+        run(["firewall-cmd", "--reload"])
+        
+        results.append(ActionResult(control_id, title, True, ok,
+                                    notes="Loopback traffic rules configured" + ("; " + "; ".join(out) if out else ""),
+                                    commands=[shlex.join(c) for c in loopback_cmds]))
+
     return results
