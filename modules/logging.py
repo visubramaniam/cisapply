@@ -90,20 +90,35 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
     
     # Control: Configure systemd-journal-upload
     control_id = "LOG-11"
-    title = "Ensure systemd-journal-upload is configured or disabled"
+    title = "Ensure systemd-journal-upload is configured"
     
     # Check if journal-upload service should be enabled
-    journal_upload_enabled = cfg.get("journal_upload_enabled", False)
+    journal_upload_enabled = cfg.get("journal_upload_enabled", True)
     
     if journal_upload_enabled:
         ensure_pkg(["systemd-journal-remote"], dry_run, results, "LOG-11a", "Install systemd-journal-remote")
-        ensure_service_enabled("systemd-journal-upload", dry_run, results, control_id, title)
+        
+        # Enable journal-upload service
+        if not dry_run:
+            run(["systemctl", "enable", "systemd-journal-upload"])
+            # Don't start it if no remote server is configured
+            journal_remote_url = cfg.get("journal_remote_url", "")
+            if journal_remote_url:
+                run(["systemctl", "start", "systemd-journal-upload"])
+                results.append(ActionResult(control_id, title, True, True, 
+                                            notes=f"systemd-journal-upload enabled and started (remote: {journal_remote_url})"))
+            else:
+                results.append(ActionResult(control_id, title, True, True, 
+                                            notes="systemd-journal-upload enabled (configure journal_remote_url to start)"))
+        else:
+            results.append(ActionResult(control_id, title, True, True,
+                                        notes="DRY-RUN: Would enable systemd-journal-upload"))
     else:
         # Disable journal-upload if not needed
         if not dry_run:
             run(["systemctl", "stop", "systemd-journal-upload"])
             run(["systemctl", "disable", "systemd-journal-upload"])
         results.append(ActionResult(control_id, title, True, True, 
-                                    notes="systemd-journal-upload disabled (not configured for remote logging)"))
+                                    notes="systemd-journal-upload disabled (set journal_upload_enabled=true to enable)"))
     
     return results

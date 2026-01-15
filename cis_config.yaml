@@ -161,9 +161,14 @@ packages:
 logging:
   # Fix log file permissions
   fix_logfile_permissions: true
-  # Configure systemd-journal-upload
-  configure_journal_upload: true
-  journal_upload_url: ""  # Set remote URL if needed
+  # Configure systemd-journal-upload (CIS 4.2.1.2)
+  journal_upload_enabled: true
+  journal_remote_url: ""  # Set remote URL if needed for journal upload
+
+# Sysctl Kernel Hardening (CIS 1.4.4)
+sysctl:
+  # ptrace_scope: 2 = admin-only attach (CIS L2 recommended)
+  kernel_yama_ptrace_scope: 2
 
 # TCP Wrappers (CIS 3.4.x)
 tcpwrappers:

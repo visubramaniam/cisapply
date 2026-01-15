@@ -53,7 +53,7 @@ RULES = """## CIS baseline audit rules - comprehensive
 
 # Time changes
 -a always,exit -F arch=b64 -S adjtimex,settimeofday,clock_settime -k time-change
--a always,exit -F arch=b64 -S clock_adjtime -F auid>=1000 -F auid!=4294967295 -k time-change
+-a always,exit -F arch=b64 -S clock_adjtime -F auid>=1000 -F auid!=unset -k time-change
 -a always,exit -F arch=b32 -S adjtimex,settimeofday,stime,clock_settime -k time-change
 -w /etc/localtime -p wa -k time-change
 
@@ -64,45 +64,47 @@ RULES = """## CIS baseline audit rules - comprehensive
 # SELinux changes
 -w /etc/selinux/ -p wa -k MAC-policy
 -w /usr/share/selinux/ -p wa -k MAC-policy
--a always,exit -F path=/usr/bin/chcon -F perm=x -F auid>=1000 -F auid!=4294967295 -k perm_chng
--a always,exit -F path=/usr/bin/setfacl -F perm=x -F auid>=1000 -F auid!=4294967295 -k perm_chng
--a always,exit -F path=/usr/bin/chacl -F perm=x -F auid>=1000 -F auid!=4294967295 -k perm_chng
--a always,exit -F path=/usr/sbin/usermod -F perm=x -F auid>=1000 -F auid!=4294967295 -k usermod
+-a always,exit -F path=/usr/bin/chcon -F perm=x -F auid>=1000 -F auid!=unset -k perm_chng
+-a always,exit -F path=/usr/bin/setfacl -F perm=x -F auid>=1000 -F auid!=unset -k perm_chng
+-a always,exit -F path=/usr/bin/chacl -F perm=x -F auid>=1000 -F auid!=unset -k perm_chng
+-a always,exit -F path=/usr/sbin/usermod -F perm=x -F auid>=1000 -F auid!=unset -k usermod
 
 # Mount operations
--a always,exit -F arch=b64 -S mount,umount2 -F auid>=1000 -F auid!=4294967295 -k mounts
--a always,exit -F arch=b32 -S mount,umount,umount2 -F auid>=1000 -F auid!=4294967295 -k mounts
+-a always,exit -F arch=b64 -S mount -S umount2 -F auid>=1000 -F auid!=unset -k mounts
+-a always,exit -F arch=b32 -S mount -S umount -S umount2 -F auid>=1000 -F auid!=unset -k mounts
 
 # File access attempts (unsuccessful)
--a always,exit -F arch=b64 -S creat,open,openat,truncate,ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=4294967295 -k access
--a always,exit -F arch=b32 -S creat,open,openat,truncate,ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=4294967295 -k access
--a always,exit -F arch=b64 -S creat,open,openat,truncate,ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=4294967295 -k access
--a always,exit -F arch=b32 -S creat,open,openat,truncate,ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=4294967295 -k access
+-a always,exit -F arch=b64 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=unset -k access
+-a always,exit -F arch=b32 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=unset -k access
+-a always,exit -F arch=b64 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=unset -k access
+-a always,exit -F arch=b32 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=unset -k access
 
 # File deletion/modification
--a always,exit -F arch=b64 -S unlink,unlinkat,rename,renameat -F auid>=1000 -F auid!=4294967295 -k delete
--a always,exit -F arch=b32 -S unlink,unlinkat,rename,renameat,rmdir -F auid>=1000 -F auid!=4294967295 -k delete
+-a always,exit -F arch=b64 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=unset -k delete
+-a always,exit -F arch=b32 -S unlink -S unlinkat -S rename -S renameat -S rmdir -F auid>=1000 -F auid!=unset -k delete
 
 # File permission and attribute changes
--a always,exit -F arch=b64 -S chmod,fchmod,fchmodat -F auid>=1000 -F auid!=4294967295 -k perm_mod
--a always,exit -F arch=b32 -S chmod,fchmod,fchmodat -F auid>=1000 -F auid!=4294967295 -k perm_mod
--a always,exit -F arch=b64 -S chown,fchown,fchownat,lchown -F auid>=1000 -F auid!=4294967295 -k perm_mod
--a always,exit -F arch=b32 -S chown,fchown,fchownat,lchown -F auid>=1000 -F auid!=4294967295 -k perm_mod
--a always,exit -F arch=b64 -S setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod
--a always,exit -F arch=b32 -S setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod
+-a always,exit -F arch=b64 -S chmod -S fchmod -S fchmodat -F auid>=1000 -F auid!=unset -k perm_mod
+-a always,exit -F arch=b32 -S chmod -S fchmod -S fchmodat -F auid>=1000 -F auid!=unset -k perm_mod
+-a always,exit -F arch=b64 -S chown -S fchown -S fchownat -S lchown -F auid>=1000 -F auid!=unset -k perm_mod
+-a always,exit -F arch=b32 -S chown -S fchown -S fchownat -S lchown -F auid>=1000 -F auid!=unset -k perm_mod
+-a always,exit -F arch=b64 -S setxattr -S lsetxattr -S fsetxattr -S removexattr -S lremovexattr -S fremovexattr -F auid>=1000 -F auid!=unset -k perm_mod
+-a always,exit -F arch=b32 -S setxattr -S lsetxattr -S fsetxattr -S removexattr -S lremovexattr -S fremovexattr -F auid>=1000 -F auid!=unset -k perm_mod
 
 # Kernel modules
 -w /sbin/insmod -p x -k modules
 -w /sbin/rmmod -p x -k modules
 -w /sbin/modprobe -p x -k modules
 -a always,exit -F path=/usr/bin/kmod -F perm=x -F auid>=1000 -F auid!=4294967295 -k modules
--a always,exit -F arch=b64 -S init_module,finit_module,delete_module,create_module,query_module -F auid>=1000 -F auid!=4294967295 -k modules
--a always,exit -F arch=b32 -S init_module,finit_module,delete_module,create_module,query_module -F auid>=1000 -F auid!=4294967295 -k modules
+-a always,exit -F arch=b64 -S init_module -S finit_module -S delete_module -S create_module -S query_module -F auid>=1000 -F auid!=unset -k modules
+-a always,exit -F arch=b32 -S init_module -S finit_module -S delete_module -S create_module -S query_module -F auid>=1000 -F auid!=unset -k modules
 
 # Privileged commands (will be dynamically generated)
 # -a always,exit -F path=/usr/bin/sudo -F auid>=1000 -F auid!=4294967295 -k privileged
 
-# Execution logging
+# Execution logging - execve syscall for all users with UID >= 1000
+-a always,exit -F arch=b64 -S execve -F auid>=1000 -F auid!=unset -k exec
+-a always,exit -F arch=b32 -S execve -F auid>=1000 -F auid!=unset -k exec
 -a always,exit -F arch=b64 -S execve -C uid!=euid -F euid=0 -k actions
 -a always,exit -F arch=b32 -S execve -C uid!=euid -F euid=0 -k actions
 -a always,exit -F arch=b64 -S execve -C gid!=egid -F egid=0 -k actions
@@ -122,7 +124,7 @@ def _get_privileged_commands():
         binaries = [b.strip() for b in result.stdout.strip().split('\n') if b.strip()]
         rules = []
         for binary in binaries:
-            rules.append(f"-a always,exit -F path={binary} -F perm=x -F auid>=1000 -F auid!=4294967295 -k privileged")
+            rules.append(f"-a always,exit -F path={binary} -F perm=x -F auid>=1000 -F auid!=unset -k privileged")
         return "\n".join(rules)
     except Exception:
         return ""
@@ -159,17 +161,21 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
     # Write comprehensive audit rules
     changed, note = write_file("/etc/audit/rules.d/99-cis-hardening.rules", full_rules, mode=0o640, dry_run=dry_run)
     
-    # Load audit rules
+    # Load audit rules and restart auditd
     cmd=["augenrules","--load"]
+    cmd_restart=["service", "auditd", "restart"]
     if dry_run:
         results.append(ActionResult("AUD-3","Install CIS audit rules and load", changed, True,
-                                    notes=note+"\nDRY-RUN: would run "+shlex.join(cmd),
-                                    commands=[shlex.join(cmd)], files=["/etc/audit/rules.d/99-cis-hardening.rules"]))
+                                    notes=note+"\nDRY-RUN: would run "+shlex.join(cmd)+" and "+shlex.join(cmd_restart),
+                                    commands=[shlex.join(cmd), shlex.join(cmd_restart)], files=["/etc/audit/rules.d/99-cis-hardening.rules"]))
     else:
         cp=run(cmd)
         ok=(cp.returncode==0)
+        # Also restart auditd to ensure runtime rules are loaded
+        cp2=run(cmd_restart)
+        ok = ok and (cp2.returncode==0)
         results.append(ActionResult("AUD-3","Install CIS audit rules and load", changed, ok,
-                                    notes=note+"\n"+(cp.stdout+cp.stderr).strip(),
-                                    commands=[shlex.join(cmd)], files=["/etc/audit/rules.d/99-cis-hardening.rules"]))
+                                    notes=note+"\n"+(cp.stdout+cp.stderr).strip()+"\n"+(cp2.stdout+cp2.stderr).strip(),
+                                    commands=[shlex.join(cmd), shlex.join(cmd_restart)], files=["/etc/audit/rules.d/99-cis-hardening.rules"]))
     
     return results

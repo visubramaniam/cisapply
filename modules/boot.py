@@ -276,14 +276,20 @@ def apply(cfg: Dict[str, Any], dry_run: bool, profile: str) -> List[ActionResult
                     with open(grub_default, "w", encoding="utf-8") as f:
                         f.write(new_content)
                     
+                    # Also use grubby to update kernel parameters for current and all kernels
+                    grubby_cmd = ["grubby", "--update-kernel", "ALL", "--args", "audit=1 audit_backlog_limit=8192"]
+                    cp_grubby = run(grubby_cmd)
+                    commands.append(shlex.join(grubby_cmd))
+                    
                     # Regenerate grub configuration
                     cmd = ["grub2-mkconfig", "-o", "/boot/grub2/grub.cfg"]
                     cp = run(cmd)
                     commands.append(shlex.join(cmd))
-                    notes = f"Updated kernel parameters to: {updated_params}\n" + (cp.stdout + cp.stderr).strip()
+                    notes = f"Updated kernel parameters to: {updated_params}\n" + (cp_grubby.stdout + cp_grubby.stderr).strip() + "\n" + (cp.stdout + cp.stderr).strip()
                     ok = (cp.returncode == 0)
                 else:
                     notes = f"DRY-RUN: Would update kernel parameters to: {updated_params}"
+                    commands.append("grubby --update-kernel ALL --args 'audit=1 audit_backlog_limit=8192'")
                     commands.append("grub2-mkconfig -o /boot/grub2/grub.cfg")
             else:
                 notes = f"Audit kernel parameters already configured: {updated_params}"

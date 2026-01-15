@@ -34,7 +34,7 @@ L1 = {
 L2 = {
  "kernel.kptr_restrict": "2",
  "kernel.dmesg_restrict": "1",
- "kernel.yama.ptrace_scope": "1",
+ "kernel.yama.ptrace_scope": "2",
  "fs.protected_hardlinks": "1",
  "fs.protected_symlinks": "1",
  "net.ipv4.tcp_rfc1337": "1",
@@ -89,19 +89,21 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
     control_id = "SYSCTL-2"
     title = "Ensure kernel.yama.ptrace_scope is set"
     
+    # Use ptrace_scope=2 for stricter CIS L2 compliance
+    target_ptrace_scope = str(cfg.get("kernel_yama_ptrace_scope", "2"))
     cmd_check = ["sysctl", "kernel.yama.ptrace_scope"]
     if not dry_run:
         cp = run(cmd_check)
         current_val = cp.stdout.strip().split("=")[-1].strip() if cp.stdout else "unknown"
-        if current_val != "1":
-            run(["sysctl", "-w", "kernel.yama.ptrace_scope=1"])
+        if current_val != target_ptrace_scope:
+            run(["sysctl", "-w", f"kernel.yama.ptrace_scope={target_ptrace_scope}"])
             results.append(ActionResult(control_id, title, True, True,
-                                        notes=f"Set kernel.yama.ptrace_scope from {current_val} to 1"))
+                                        notes=f"Set kernel.yama.ptrace_scope from {current_val} to {target_ptrace_scope}"))
         else:
             results.append(ActionResult(control_id, title, False, True,
-                                        notes="kernel.yama.ptrace_scope already set to 1"))
+                                        notes=f"kernel.yama.ptrace_scope already set to {target_ptrace_scope}"))
     else:
         results.append(ActionResult(control_id, title, True, True,
-                                    notes="DRY-RUN: Would verify kernel.yama.ptrace_scope=1"))
+                                    notes=f"DRY-RUN: Would verify kernel.yama.ptrace_scope={target_ptrace_scope}"))
     
     return results
