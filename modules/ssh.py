@@ -18,14 +18,14 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
     atf=str(cfg.get("allow_tcp_forwarding","no"))
     aaf=str(cfg.get("allow_agent_forwarding","no"))
     
-    # Crypto settings
-    ciphers=str(cfg.get("ciphers","chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr")).strip()
+    # Crypto settings - CIS compliant ciphers only (no chacha20 per some benchmarks)
+    ciphers=str(cfg.get("ciphers","aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr")).strip()
     macs=str(cfg.get("macs","hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512,hmac-sha2-256")).strip()
     kex=str(cfg.get("kex_algorithms","curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp521,ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group-exchange-sha256")).strip()
     
-    # Additional CIS requirements
+    # Additional CIS requirements - LogLevel should be VERBOSE for CIS compliance
     banner=str(cfg.get("banner","/etc/issue.net"))
-    log_level=str(cfg.get("log_level","INFO"))
+    log_level=str(cfg.get("log_level","VERBOSE"))
     max_startups=str(cfg.get("max_startups","10:30:60"))
     max_sessions=int(cfg.get("max_sessions",10))
     disable_forwarding=str(cfg.get("disable_forwarding","yes"))

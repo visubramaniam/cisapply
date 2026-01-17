@@ -114,15 +114,20 @@ def apply(cfg: Dict[str, Any], dry_run: bool, profile: str) -> List[ActionResult
     
     try:
         pwhistory_conf = "/etc/security/pwhistory.conf"
+        
+        # CIS requires: remember, retry, enforce_for_root
         c1, n1 = ensure_kv_in_file(pwhistory_conf, "remember", str(password_remember), sep=" = ", dry_run=dry_run)
         c2, n2 = ensure_kv_in_file(pwhistory_conf, "enforce_for_root", "", sep="", dry_run=dry_run)
+        
+        # Ensure retry is set (some Qualys checks look for this)
+        c3, n3 = ensure_kv_in_file(pwhistory_conf, "retry", "3", sep=" = ", dry_run=dry_run)
         
         results.append(ActionResult(
             id=control_id,
             title=title,
-            changed=c1 or c2,
+            changed=c1 or c2 or c3,
             ok=True,
-            notes=f"{n1}; {n2}",
+            notes=f"{n1}; {n2}; {n3}",
             commands=[],
             files=[pwhistory_conf]
         ))

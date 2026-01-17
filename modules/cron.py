@@ -17,23 +17,34 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
     results.append(ActionResult("CRON-2","Restrict cron/at to authorized users (create allow files)", c1 or c2, True, notes="; ".join([n1,n2]),
                                 files=["/etc/cron.allow","/etc/at.allow"]))
     
-    # Control: Ensure cron.deny and at.deny have proper permissions or are removed
+    # Control: Ensure cron.deny and at.deny do not exist when allow files exist
+    # CIS requires: when allow files exist, deny files should be removed
     control_id = "CRON-2b"
-    title = "Ensure cron.deny and at.deny have correct permissions"
+    title = "Remove cron.deny and at.deny files (allow files take precedence)"
     changed = False
     notes = []
     
-    deny_files = ["/etc/cron.deny", "/etc/at.deny"]
-    for df in deny_files:
-        if os.path.exists(df):
-            c, n = ensure_perm(df, 0o600, 0, 0, dry_run)
+    # If allow files exist, deny files should be removed per CIS
+    allow_files = [("/etc/cron.allow", "/etc/cron.deny"), ("/etc/at.allow", "/etc/at.deny")]
+    for allow_file, deny_file in allow_files:
+        if os.path.exists(allow_file) and os.path.exists(deny_file):
+            if not dry_run:
+                os.remove(deny_file)
+                changed = True
+                notes.append(f"Removed {deny_file} (allow file exists)")
+            else:
+                notes.append(f"DRY-RUN: Would remove {deny_file}")
+                changed = True
+        elif os.path.exists(deny_file) and not os.path.exists(allow_file):
+            # If no allow file, ensure deny file has proper permissions
+            c, n = ensure_perm(deny_file, 0o600, 0, 0, dry_run)
             if c:
                 changed = True
-                notes.append(f"{df}: permissions fixed")
+                notes.append(f"{deny_file}: permissions fixed to 0600")
             else:
-                notes.append(f"{df}: permissions OK")
+                notes.append(f"{deny_file}: permissions OK (0600)")
         else:
-            notes.append(f"{df}: not present (OK if allow file exists)")
+            notes.append(f"{deny_file}: not present (OK)")
     
     results.append(ActionResult(control_id, title, changed, True, notes="; ".join(notes)))
     

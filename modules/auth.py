@@ -37,7 +37,7 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
     ch.append(ensure_kv_in_file(ld,"PASS_MAX_DAYS", str(cfg.get("pass_max_days",365)), sep="\t", dry_run=dry_run))
     ch.append(ensure_kv_in_file(ld,"PASS_MIN_DAYS", str(cfg.get("pass_min_days",1)), sep="\t", dry_run=dry_run))
     ch.append(ensure_kv_in_file(ld,"PASS_WARN_AGE", str(cfg.get("pass_warn_age",14)), sep="\t", dry_run=dry_run))
-    ch.append(ensure_kv_in_file(ld,"INACTIVE", str(cfg.get("inactive_days",30)), sep="\t", dry_run=dry_run))
+    # Note: INACTIVE is set via useradd -D, not login.defs (it's not a valid login.defs parameter)
     results.append(ActionResult("AUTH-2","Configure password aging (login.defs)", any(c for c,_ in ch), True,
                                 notes="; ".join(n for _,n in ch), files=[ld]))
 
@@ -58,6 +58,7 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
     control_id = "AUTH-2b"
     title = "Ensure password aging on existing user accounts"
     pass_max_days = int(cfg.get("pass_max_days", 365))
+    pass_min_days = int(cfg.get("pass_min_days", 1))
     
     try:
         # Get list of users with UID >= 1000 that have passwords
@@ -68,7 +69,8 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
         modified_users = []
         for user in users:
             if user:
-                cmd_chage = ["chage", "-M", str(pass_max_days), "-I", str(inactive_days), user]
+                # Set max days, min days, and inactive days
+                cmd_chage = ["chage", "-M", str(pass_max_days), "-m", str(pass_min_days), "-I", str(inactive_days), user]
                 if not dry_run:
                     run(cmd_chage)
                     modified_users.append(user)

@@ -140,10 +140,12 @@ def apply(cfg: Dict[str, Any], dry_run: bool, profile: str) -> List[ActionResult
         
         if enforce_grub_password:
             # Check if superuser is set in user.cfg
+            # Qualys checks for GRUB2_PASSWORD= (not grub.pbkdf2)
             has_password = False
             if os.path.exists(user_cfg):
                 with open(user_cfg, "r", encoding="utf-8") as f:
                     content = f.read()
+                    # Qualys expects: GRUB2_PASSWORD=grub.pbkdf2.sha512...
                     if "GRUB2_PASSWORD=" in content and "grub.pbkdf2.sha512" in content:
                         has_password = True
                         notes = "GRUB password protection already configured"

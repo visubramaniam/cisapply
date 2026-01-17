@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 from .utils import ActionResult, ensure_pkg, ensure_service_enabled, ensure_kv_in_file, run, ensure_perm
-import shlex, os, glob
+import shlex, os, glob, re
 
 def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
     results=[]
@@ -16,9 +16,54 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
     # Install and enable rsyslog
     ensure_pkg(["rsyslog"], dry_run, results, "LOG-2", "Install rsyslog")
     
-    # Configure rsyslog - set $FileCreateMode
-    c5,n5=ensure_kv_in_file("/etc/rsyslog.conf","$FileCreateMode","0640",sep=" ",dry_run=dry_run)
-    results.append(ActionResult("LOG-3","Configure rsyslog $FileCreateMode", c5, True, notes=n5, files=["/etc/rsyslog.conf"]))
+    # Configure rsyslog - set $FileCreateMode 0640 (space after mode)
+    # Qualys expects: $FileCreateMode 0640 (with space, not =)
+    rsyslog_conf = "/etc/rsyslog.conf"
+    control_id = "LOG-3"
+    title = "Configure rsyslog $FileCreateMode"
+    changed = False
+    notes = ""
+    
+    try:
+        if os.path.exists(rsyslog_conf):
+            with open(rsyslog_conf, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+            
+            new_content = content
+            modified = False
+            
+            # Check if $FileCreateMode is already set correctly
+            if not re.search(r'^\$FileCreateMode\s+0640', content, re.MULTILINE):
+                # Remove any existing $FileCreateMode line
+                new_content = re.sub(r'^\$FileCreateMode.*$\n?', '', new_content, flags=re.MULTILINE)
+                # Add the correct setting near the top (after any module loads)
+                if '$ModLoad' in new_content:
+                    new_content = re.sub(
+                        r'(\$ModLoad[^\n]*\n)',
+                        r'\1$FileCreateMode 0640\n',
+                        new_content,
+                        count=1
+                    )
+                else:
+                    new_content = "$FileCreateMode 0640\n" + new_content
+                modified = True
+            
+            if modified and not dry_run:
+                with open(rsyslog_conf, "w", encoding="utf-8") as f:
+                    f.write(new_content)
+                changed = True
+                notes = "Set $FileCreateMode 0640 in rsyslog.conf"
+                run(["systemctl", "restart", "rsyslog"])
+            elif modified:
+                notes = "DRY-RUN: Would set $FileCreateMode 0640"
+            else:
+                notes = "$FileCreateMode 0640 already configured"
+        else:
+            notes = "rsyslog.conf not found"
+    except Exception as e:
+        notes = f"Error: {str(e)}"
+    
+    results.append(ActionResult(control_id, title, changed, True, notes=notes, files=[rsyslog_conf]))
     
     # Enable rsyslog and systemd-journald services
     ensure_service_enabled("rsyslog", dry_run, results, "LOG-4", "Enable rsyslog service")

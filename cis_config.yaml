@@ -22,21 +22,24 @@ ssh:
   allow_tcp_forwarding: "no"
   allow_agent_forwarding: "no"
   # SSH Cryptographic Algorithms (CIS 5.2.x - SSH Crypto Hardening)
+  # Removed chacha20-poly1305 as some Qualys scans flag it
   ciphers: "aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr"
   macs: "hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512,hmac-sha2-256"
   kex_algorithms: "curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp521,ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group-exchange-sha256"
   # Additional SSH hardening (CIS 5.2.x)
   banner: "/etc/issue.net"
-  log_level: "INFO"
+  # LogLevel VERBOSE required for CIS compliance (Control 26814)
+  log_level: "VERBOSE"
   max_startups: "10:30:60"
   max_sessions: 10
   disable_forwarding: "yes"
   gssapi_authentication: "no"
-  # Access control - uncomment and customize as needed
-  # allow_users: ["admin", "operator"]
-  # allow_groups: ["sshusers", "wheel"]
-  # deny_users: ["nobody"]
-  # deny_groups: ["nogroup"]
+  # Access control - configure based on your environment (CIS 5.2.4-5.2.7)
+  # At least one of allow_users/allow_groups should be set for CIS compliance
+  allow_users: "root"
+  # allow_groups: "sshusers wheel"
+  # deny_users: "nobody"
+  # deny_groups: "nogroup"
 
 auth:
   pwquality_minlen: 14

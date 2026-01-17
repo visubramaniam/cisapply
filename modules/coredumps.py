@@ -45,16 +45,58 @@ ProcessSizeMax=0
         
         c3, n3 = write_file(dropin_file, dropin_content, mode=0o644, dry_run=dry_run)
         
-        # Also update main coredump.conf for redundancy
-        c4, n4 = ensure_kv_in_file(coredump_conf, "Storage", "none", sep="=", dry_run=dry_run)
-        c5, n5 = ensure_kv_in_file(coredump_conf, "ProcessSizeMax", "0", sep="=", dry_run=dry_run)
+        # Update main coredump.conf - ensure settings are in [Coredump] section
+        # Qualys checks the main coredump.conf file directly
+        c4 = c5 = False
+        n4 = n5 = ""
+        
+        if os.path.exists(coredump_conf):
+            with open(coredump_conf, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+            
+            new_content = content
+            modified = False
+            
+            # Ensure [Coredump] section exists and has our settings
+            if "[Coredump]" not in content:
+                # Add section with settings
+                new_content = content.rstrip() + "\n\n[Coredump]\nStorage=none\nProcessSizeMax=0\n"
+                modified = True
+            else:
+                # Check and update Storage setting
+                import re
+                if not re.search(r'^\s*Storage\s*=', content, re.MULTILINE):
+                    # Add Storage after [Coredump]
+                    new_content = re.sub(r'(\[Coredump\])', r'\1\nStorage=none', new_content)
+                    modified = True
+                elif not re.search(r'^\s*Storage\s*=\s*none', content, re.MULTILINE):
+                    new_content = re.sub(r'^\s*#?\s*Storage\s*=.*$', 'Storage=none', new_content, flags=re.MULTILINE)
+                    modified = True
+                
+                # Check and update ProcessSizeMax setting
+                if not re.search(r'^\s*ProcessSizeMax\s*=', new_content, re.MULTILINE):
+                    new_content = re.sub(r'(\[Coredump\])', r'\1\nProcessSizeMax=0', new_content)
+                    modified = True
+                elif not re.search(r'^\s*ProcessSizeMax\s*=\s*0', new_content, re.MULTILINE):
+                    new_content = re.sub(r'^\s*#?\s*ProcessSizeMax\s*=.*$', 'ProcessSizeMax=0', new_content, flags=re.MULTILINE)
+                    modified = True
+            
+            if modified and not dry_run:
+                with open(coredump_conf, "w", encoding="utf-8") as f:
+                    f.write(new_content)
+                c4 = True
+                n4 = "Updated coredump.conf with Storage=none and ProcessSizeMax=0"
+            elif modified:
+                n4 = "DRY-RUN: Would update coredump.conf"
+            else:
+                n4 = "coredump.conf already has correct settings"
         
         # Reload systemd
-        if not dry_run and (c3 or c4 or c5):
+        if not dry_run and (c3 or c4):
             run(["systemctl", "daemon-reload"])
         
-        results.append(ActionResult(control_id, title, c3 or c4 or c5, True,
-                                    notes=f"{n3}; {n4}; {n5}",
+        results.append(ActionResult(control_id, title, c3 or c4, True,
+                                    notes=f"{n3}; {n4}",
                                     files=[dropin_file, coredump_conf]))
         
     except Exception as e:

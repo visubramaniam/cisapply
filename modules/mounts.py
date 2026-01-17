@@ -197,9 +197,11 @@ WantedBy=local-fs.target
         results.append(ActionResult(control_id, title, False, False,
                                     notes=f"Error: {str(e)}"))
 
-    # Control: Ensure nodev on /var/log/audit
+    # Control: Ensure nodev,nosuid,noexec on /var/log/audit
     control_id = "MNT-5"
-    title = "Ensure nodev option on /var/log/audit partition"
+    title = "Ensure nodev,nosuid,noexec options on /var/log/audit partition"
+    
+    audit_required_opts = ["nodev", "nosuid", "noexec"]
     
     try:
         if os.path.exists(fstab):
@@ -211,8 +213,10 @@ WantedBy=local-fs.target
             
             if match:
                 current_opts = match.group(2)
-                if "nodev" not in current_opts:
-                    new_opts = current_opts + ",nodev"
+                missing_opts = [opt for opt in audit_required_opts if opt not in current_opts]
+                
+                if missing_opts:
+                    new_opts = current_opts + "," + ",".join(missing_opts)
                     new_content = re.sub(audit_pattern, rf'\g<1>{new_opts}\g<3>', content, flags=re.MULTILINE)
                     
                     if not dry_run:
@@ -220,15 +224,15 @@ WantedBy=local-fs.target
                             f.write(new_content)
                         run(["mount", "-o", "remount", "/var/log/audit"])
                         results.append(ActionResult(control_id, title, True, True,
-                                                    notes="Added nodev to /var/log/audit mount options",
+                                                    notes=f"Added {','.join(missing_opts)} to /var/log/audit mount options",
                                                     files=[fstab]))
                     else:
                         results.append(ActionResult(control_id, title, True, True,
-                                                    notes="DRY-RUN: Would add nodev to /var/log/audit",
+                                                    notes=f"DRY-RUN: Would add {','.join(missing_opts)} to /var/log/audit",
                                                     files=[fstab]))
                 else:
                     results.append(ActionResult(control_id, title, False, True,
-                                                notes="/var/log/audit already has nodev option"))
+                                                notes="/var/log/audit already has nodev,nosuid,noexec options"))
             else:
                 results.append(ActionResult(control_id, title, False, True,
                                             notes="/var/log/audit not in /etc/fstab - MANUAL: Create separate partition for /var/log/audit"))
