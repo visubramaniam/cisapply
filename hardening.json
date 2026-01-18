@@ -3,11 +3,7 @@
     "hostname": "oel-cis-1216.coe.hv",
     "kernel": "5.15.0-205.149.5.1.el9uek.x86_64",
     "machine": "x86_64",
-<<<<<<< HEAD
-    "timestamp": "2026-01-17T22:11:51.960069",
-=======
-    "timestamp": "2026-01-17T22:19:27.252812",
->>>>>>> f3534f1 (Hardening Markdown Report)
+    "timestamp": "2026-01-17T23:03:50.001058",
     "cis_benchmark": "Oracle Linux 9 v2.0.0",
     "script_version": "2.0"
   },
@@ -20,8 +16,8 @@
     "compliance_percentage": 100.0
   },
   "remediation": {
-    "remediated": 36,
-    "already_compliant": 76,
+    "remediated": 40,
+    "already_compliant": 72,
     "failed": 0
   },
   "results": [
@@ -66,7 +62,7 @@
       "title": "Apply CIS sysctl hardening",
       "changed": true,
       "ok": true,
-      "notes": "/etc/bashrc: line 90: TMOUT: readonly variable\n/etc/profile: line 79: TMOUT: readonly variable\n/etc/bashrc: line 90: TMOUT: readonly variable\n* Applying /usr/lib/sysctl.d/01-unprivileged-bpf.conf ...\n* Applying /usr/lib/sysctl.d/10-default-yama-scope.conf ...\n* Applying /usr/lib/sysctl.d/50-coredump.conf ...\n* Applying /usr/lib/sysctl.d/50-default.conf ...\n* Applying /usr/lib/sysctl.d/50-libkcapi-optmem_max.conf ...\n* Applying /usr/lib/sysctl.d/50-pid-max.conf ...\n* Applying /usr/lib/sysctl.d/50-redhat.conf ...\n* Applying /etc/sysctl.d/99-cis-hardening.conf ...\n* Applying /etc/sysctl.d/99-sysctl.conf ...\n* Applying /etc/sysctl.conf ...\nkernel.unprivileged_bpf_disabled = 1\nkernel.yama.ptrace_scope = 0\nkernel.core_pattern = |/usr/lib/systemd/systemd-coredump %P %u %g %s %t %c %h %d %F\nkernel.core_pipe_limit = 16\nfs.suid_dumpable = 2\nkernel.sysrq = 16\nkernel.core_uses_pid = 1\nnet.ipv4.conf.default.rp_filter = 2\nnet.ipv4.conf.ens192.rp_filter = 2\nnet.ipv4.conf.lo.rp_filter = 2\nnet.ipv4.conf.default.accept_source_route = 0\nnet.ipv4.conf.ens192.accept_source_route = 0\nnet.ipv4.conf.lo.accept_source_route = 0\nnet.ipv4.conf.default.promote_secondaries = 1\nnet.ipv4.conf.ens192.promote_secondaries = 1\nnet.ipv4.conf.lo.promote_secondaries = 1\nnet.ipv4.ping_group_range = 0 2147483647\nnet.core.default_qdisc = fq_codel\nfs.protected_hardlinks = 1\nfs.protected_symlinks = 1\nfs.protected_regular = 1\nfs.protected_fifos = 1\nnet.core.optmem_max = 81920\nkernel.pid_max = 4194304\nkernel.kptr_restrict = 1\nnet.ipv4.conf.default.rp_filter = 1\nnet.ipv4.conf.ens192.rp_filter = 1\nnet.ipv4.conf.lo.rp_filter = 1\nfs.protected_hardlinks = 1\nfs.protected_symlinks = 1\nkernel.core_uses_pid = 1\nkernel.dmesg_restrict = 1\nkernel.kptr_restrict = 2\nkernel.perf_event_paranoid = 2\nkernel.randomize_va_space = 2\nkernel.sysrq = 0\nkernel.yama.ptrace_scope = 2\nnet.ipv4.conf.all.accept_redirects = 0\nnet.ipv4.conf.all.accept_source_route = 0\nnet.ipv4.conf.all.log_martians = 1\nnet.ipv4.conf.all.rp_filter = 1\nnet.ipv4.conf.all.secure_redirects = 0\nnet.ipv4.conf.all.send_redirects = 0\nnet.ipv4.conf.default.accept_redirects = 0\nnet.ipv4.conf.default.accept_source_route = 0\nnet.ipv4.conf.default.log_martians = 1\nnet.ipv4.conf.default.rp_filter = 1\nnet.ipv4.conf.default.secure_redirects = 0\nnet.ipv4.conf.default.send_redirects = 0\nnet.ipv4.icmp_echo_ignore_broadcasts = 1\nnet.ipv4.icmp_ignore_bogus_error_responses = 1\nnet.ipv4.ip_forward = 0\nnet.ipv4.tcp_rfc1337 = 1\nnet.ipv4.tcp_syncookies = 1\nnet.ipv6.conf.all.accept_ra = 0\nnet.ipv6.conf.all.accept_redirects = 0\nnet.ipv6.conf.all.accept_source_route = 0\nnet.ipv6.conf.all.forwarding = 0\nnet.ipv6.conf.default.accept_ra = 0\nnet.ipv6.conf.default.accept_redirects = 0\nnet.ipv6.conf.default.accept_source_route = 0",
+      "notes": "* Applying /usr/lib/sysctl.d/01-unprivileged-bpf.conf ...\n* Applying /usr/lib/sysctl.d/10-default-yama-scope.conf ...\n* Applying /usr/lib/sysctl.d/50-coredump.conf ...\n* Applying /usr/lib/sysctl.d/50-default.conf ...\n* Applying /usr/lib/sysctl.d/50-libkcapi-optmem_max.conf ...\n* Applying /usr/lib/sysctl.d/50-pid-max.conf ...\n* Applying /usr/lib/sysctl.d/50-redhat.conf ...\n* Applying /etc/sysctl.d/99-cis-hardening.conf ...\n* Applying /etc/sysctl.d/99-sysctl.conf ...\n* Applying /etc/sysctl.conf ...\nkernel.unprivileged_bpf_disabled = 1\nkernel.yama.ptrace_scope = 0\nkernel.core_pattern = |/usr/lib/systemd/systemd-coredump %P %u %g %s %t %c %h %d %F\nkernel.core_pipe_limit = 16\nfs.suid_dumpable = 2\nkernel.sysrq = 16\nkernel.core_uses_pid = 1\nnet.ipv4.conf.default.rp_filter = 2\nnet.ipv4.conf.ens192.rp_filter = 2\nnet.ipv4.conf.lo.rp_filter = 2\nnet.ipv4.conf.default.accept_source_route = 0\nnet.ipv4.conf.ens192.accept_source_route = 0\nnet.ipv4.conf.lo.accept_source_route = 0\nnet.ipv4.conf.default.promote_secondaries = 1\nnet.ipv4.conf.ens192.promote_secondaries = 1\nnet.ipv4.conf.lo.promote_secondaries = 1\nnet.ipv4.ping_group_range = 0 2147483647\nnet.core.default_qdisc = fq_codel\nfs.protected_hardlinks = 1\nfs.protected_symlinks = 1\nfs.protected_regular = 1\nfs.protected_fifos = 1\nnet.core.optmem_max = 81920\nkernel.pid_max = 4194304\nkernel.kptr_restrict = 1\nnet.ipv4.conf.default.rp_filter = 1\nnet.ipv4.conf.ens192.rp_filter = 1\nnet.ipv4.conf.lo.rp_filter = 1\nfs.protected_hardlinks = 1\nfs.protected_symlinks = 1\nkernel.core_uses_pid = 1\nkernel.dmesg_restrict = 1\nkernel.kptr_restrict = 2\nkernel.perf_event_paranoid = 2\nkernel.randomize_va_space = 2\nkernel.sysrq = 0\nkernel.yama.ptrace_scope = 2\nnet.ipv4.conf.all.accept_redirects = 0\nnet.ipv4.conf.all.accept_source_route = 0\nnet.ipv4.conf.all.log_martians = 1\nnet.ipv4.conf.all.rp_filter = 1\nnet.ipv4.conf.all.secure_redirects = 0\nnet.ipv4.conf.all.send_redirects = 0\nnet.ipv4.conf.default.accept_redirects = 0\nnet.ipv4.conf.default.accept_source_route = 0\nnet.ipv4.conf.default.log_martians = 1\nnet.ipv4.conf.default.rp_filter = 1\nnet.ipv4.conf.default.secure_redirects = 0\nnet.ipv4.conf.default.send_redirects = 0\nnet.ipv4.icmp_echo_ignore_broadcasts = 1\nnet.ipv4.icmp_ignore_bogus_error_responses = 1\nnet.ipv4.ip_forward = 0\nnet.ipv4.tcp_rfc1337 = 1\nnet.ipv4.tcp_syncookies = 1\nnet.ipv6.conf.all.accept_ra = 0\nnet.ipv6.conf.all.accept_redirects = 0\nnet.ipv6.conf.all.accept_source_route = 0\nnet.ipv6.conf.all.forwarding = 0\nnet.ipv6.conf.default.accept_ra = 0\nnet.ipv6.conf.default.accept_redirects = 0\nnet.ipv6.conf.default.accept_source_route = 0",
       "commands": [
         "bash -lc 'cat > /etc/sysctl.d/99-cis-hardening.conf <<'\"'\"'EOF'\"'\"'\n# Generated by cis hardening scripts\nfs.protected_hardlinks = 1\nfs.protected_symlinks = 1\nkernel.core_uses_pid = 1\nkernel.dmesg_restrict = 1\nkernel.kptr_restrict = 2\nkernel.perf_event_paranoid = 2\nkernel.randomize_va_space = 2\nkernel.sysrq = 0\nkernel.yama.ptrace_scope = 2\nnet.ipv4.conf.all.accept_redirects = 0\nnet.ipv4.conf.all.accept_source_route = 0\nnet.ipv4.conf.all.log_martians = 1\nnet.ipv4.conf.all.rp_filter = 1\nnet.ipv4.conf.all.secure_redirects = 0\nnet.ipv4.conf.all.send_redirects = 0\nnet.ipv4.conf.default.accept_redirects = 0\nnet.ipv4.conf.default.accept_source_route = 0\nnet.ipv4.conf.default.log_martians = 1\nnet.ipv4.conf.default.rp_filter = 1\nnet.ipv4.conf.default.secure_redirects = 0\nnet.ipv4.conf.default.send_redirects = 0\nnet.ipv4.icmp_echo_ignore_broadcasts = 1\nnet.ipv4.icmp_ignore_bogus_error_responses = 1\nnet.ipv4.ip_forward = 0\nnet.ipv4.tcp_rfc1337 = 1\nnet.ipv4.tcp_syncookies = 1\nnet.ipv6.conf.all.accept_ra = 0\nnet.ipv6.conf.all.accept_redirects = 0\nnet.ipv6.conf.all.accept_source_route = 0\nnet.ipv6.conf.all.forwarding = 0\nnet.ipv6.conf.default.accept_ra = 0\nnet.ipv6.conf.default.accept_redirects = 0\nnet.ipv6.conf.default.accept_source_route = 0\nEOF\nchmod 644 /etc/sysctl.d/99-cis-hardening.conf'",
         "sysctl --system"
@@ -102,9 +98,9 @@
     {
       "id": "BANNER-1",
       "title": "Set login banners and clear /etc/motd",
-      "changed": false,
+      "changed": true,
       "ok": true,
-      "notes": "No change; No change; No change",
+      "notes": "No change; No change; Wrote /etc/motd",
       "commands": null,
       "files": [
         "/etc/issue",
@@ -116,9 +112,9 @@
     {
       "id": "SSH-1",
       "title": "Harden SSH daemon configuration",
-      "changed": false,
+      "changed": true,
       "ok": true,
-      "notes": "/etc/bashrc: line 90: TMOUT: readonly variable\n/etc/profile: line 79: TMOUT: readonly variable\n/etc/bashrc: line 90: TMOUT: readonly variable",
+      "notes": "",
       "commands": [
         "bash -lc 'mkdir -p /etc/ssh/sshd_config.d && cat > /etc/ssh/sshd_config.d/99-cis-hardening.conf <<'\"'\"'EOF'\"'\"'\n# CIS Oracle Linux 9 Hardening - SSH Configuration\n# Generated by cis hardening scripts\n\nPermitRootLogin no\nPasswordAuthentication no\nX11Forwarding no\nMaxAuthTries 4\nLoginGraceTime 60\nClientAliveInterval 300\nClientAliveCountMax 0\nAllowTcpForwarding no\nAllowAgentForwarding no\nUsePAM yes\nPermitEmptyPasswords no\nIgnoreRhosts yes\nHostbasedAuthentication no\nPermitUserEnvironment no\nLogLevel VERBOSE\nBanner /etc/issue.net\nMaxStartups 10:30:60\nMaxSessions 10\nDisableForwarding yes\nGSSAPIAuthentication no\nCiphers aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr\nMACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512,hmac-sha2-256\nKexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp521,ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group-exchange-sha256\nAllowUsers root\nEOF\nchmod 600 /etc/ssh/sshd_config.d/99-cis-hardening.conf'",
         "sshd -t",
@@ -430,7 +426,7 @@
       "title": "Remove legacy/insecure network packages",
       "changed": true,
       "ok": true,
-      "notes": "No match for argument: telnet\nNo match for argument: telnet-server\nNo match for argument: ftp\nNo match for argument: tftp\nNo match for argument: tftp-server\nNo match for argument: rsh\nNo match for argument: rsh-server\nNo match for argument: ypbind\nNo match for argument: ypserv\nNo match for argument: talk\nNo match for argument: talk-server\nNo match for argument: xinetd\nDependencies resolved.\nNothing to do.\nComplete!\nNo packages marked for removal.",
+      "notes": "Waiting for process with pid 305396 to finish.\nNo match for argument: telnet\nNo match for argument: telnet-server\nNo match for argument: ftp\nNo match for argument: tftp\nNo match for argument: tftp-server\nNo match for argument: rsh\nNo match for argument: rsh-server\nNo match for argument: ypbind\nNo match for argument: ypserv\nNo match for argument: talk\nNo match for argument: talk-server\nNo match for argument: xinetd\nDependencies resolved.\nNothing to do.\nComplete!\nNo packages marked for removal.",
       "commands": [
         "dnf -y remove telnet telnet-server ftp tftp tftp-server rsh rsh-server ypbind ypserv talk talk-server xinetd"
       ],
@@ -733,7 +729,7 @@
       "title": "Configure firewalld",
       "changed": true,
       "ok": true,
-      "notes": "success\nWarning: ZONE_ALREADY_SET: public\nsuccess\nsuccess\nsuccess\nsuccess\nsuccess\n/etc/bashrc: line 90: TMOUT: readonly variable\n/etc/profile: line 79: TMOUT: readonly variable\n/etc/bashrc: line 90: TMOUT: readonly variable",
+      "notes": "success\nWarning: ZONE_ALREADY_SET: public\nsuccess\nsuccess\nsuccess\nsuccess\nsuccess",
       "commands": [
         "firewall-cmd --set-default-zone public",
         "bash -lc 'set -e\nZONE=public\nSVCS=\"$(firewall-cmd --zone=\"$ZONE\" --list-services || true)\"\nPORTS=\"$(firewall-cmd --zone=\"$ZONE\" --list-ports || true)\"\nfor s in $SVCS; do firewall-cmd --permanent --zone=\"$ZONE\" --remove-service=\"$s\" || true; done\nfor p in $PORTS; do firewall-cmd --permanent --zone=\"$ZONE\" --remove-port=\"$p\" || true; done\nfirewall-cmd --permanent --zone=\"$ZONE\" --add-service=ssh\nfirewall-cmd --permanent --zone=\"$ZONE\" --add-service=https\nfirewall-cmd --reload'"
@@ -775,7 +771,7 @@
       "title": "Ensure SELinux is enforcing",
       "changed": true,
       "ok": true,
-      "notes": "Enforcing\n/etc/bashrc: line 90: TMOUT: readonly variable\n/etc/profile: line 79: TMOUT: readonly variable\n/etc/bashrc: line 90: TMOUT: readonly variable",
+      "notes": "Enforcing",
       "commands": [
         "getenforce",
         "bash -lc 'sed -ri '\"'\"'s/^SELINUX=.*/SELINUX=enforcing/'\"'\"' /etc/selinux/config'",
@@ -859,7 +855,7 @@
       "title": "Set default umask",
       "changed": true,
       "ok": true,
-      "notes": "/etc/bashrc: line 90: TMOUT: readonly variable\n/etc/profile: line 79: TMOUT: readonly variable\n/etc/bashrc: line 90: TMOUT: readonly variable",
+      "notes": "",
       "commands": [
         "bash -lc 'cat > /etc/profile.d/99-cis-umask.sh <<'\"'\"'EOF'\"'\"'\numask 027\nEOF\nchmod 644 /etc/profile.d/99-cis-umask.sh'"
       ],
@@ -871,9 +867,9 @@
     {
       "id": "AUTH-3a-/etc/bashrc",
       "title": "Set session timeout in /etc/bashrc",
-      "changed": false,
+      "changed": true,
       "ok": true,
-      "notes": "No change",
+      "notes": "Updated /etc/bashrc: TMOUT",
       "commands": null,
       "files": [
         "/etc/bashrc"
@@ -882,9 +878,9 @@
     {
       "id": "AUTH-3a-/etc/profile",
       "title": "Set session timeout in /etc/profile",
-      "changed": false,
+      "changed": true,
       "ok": true,
-      "notes": "No change",
+      "notes": "Updated /etc/profile: TMOUT",
       "commands": null,
       "files": [
         "/etc/profile"
