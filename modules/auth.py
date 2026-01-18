@@ -96,12 +96,48 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
     else:
         cp=run(cmd); results.append(ActionResult("AUTH-3","Set default umask", True, cp.returncode==0, notes=(cp.stdout+cp.stderr).strip(), commands=[shlex.join(cmd)], files=[um]))
 
-    # Set session timeout (tmout)
-    tmout_files = ["/etc/bashrc", "/etc/profile"]
-    for tf in tmout_files:
+    # Set session timeout (TMOUT) - CIS 5.5.4
+    # Use a single profile.d script to avoid readonly conflicts
+    # The script checks if TMOUT is already readonly before setting it
+    tmout_value = str(cfg.get("tmout", 900))
+    tmout_script = "/etc/profile.d/cis-tmout.sh"
+    tmout_content = f"""# CIS Oracle Linux 9 - Session Timeout (5.5.4)
+# Set TMOUT only if not already readonly
+if ! readonly -p | grep -q "TMOUT="; then
+    TMOUT={tmout_value}
+    readonly TMOUT
+    export TMOUT
+fi
+"""
+    
+    # Remove any existing TMOUT settings from bashrc/profile to avoid conflicts
+    for tf in ["/etc/bashrc", "/etc/profile"]:
         if os.path.exists(tf):
-            c,n = ensure_kv_in_file(tf,"TMOUT", str(cfg.get("tmout",900)), sep="=", dry_run=dry_run)
-            results.append(ActionResult(f"AUTH-3a-{tf}",f"Set session timeout in {tf}", c, True, notes=n, files=[tf]))
+            try:
+                with open(tf, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                # Remove existing TMOUT lines (including readonly and export)
+                new_content = re.sub(r'^.*\bTMOUT\b.*$\n?', '', content, flags=re.MULTILINE)
+                if new_content != content and not dry_run:
+                    with open(tf, "w", encoding="utf-8") as f:
+                        f.write(new_content)
+            except Exception:
+                pass
+    
+    # Write the profile.d script
+    if dry_run:
+        results.append(ActionResult("AUTH-3a", "Set session timeout via profile.d", True, True, 
+                                   notes=f"DRY-RUN: would create {tmout_script}", files=[tmout_script]))
+    else:
+        try:
+            with open(tmout_script, "w", encoding="utf-8") as f:
+                f.write(tmout_content)
+            os.chmod(tmout_script, 0o644)
+            results.append(ActionResult("AUTH-3a", "Set session timeout via profile.d", True, True, 
+                                       notes=f"Created {tmout_script} with TMOUT={tmout_value}", files=[tmout_script]))
+        except Exception as e:
+            results.append(ActionResult("AUTH-3a", "Set session timeout via profile.d", False, False, 
+                                       notes=str(e), files=[tmout_script]))
 
     # Configure faillock
     deny=int(cfg.get("lockout_deny",5))
