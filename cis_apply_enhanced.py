@@ -142,7 +142,14 @@ PROFILES = {
         "audit",
         "logging",
         "fileperms",
-        "firewalld"
+        "firewalld",
+        "auth",
+        "coredumps",
+        "cron",
+        "aide",
+        "mounts",
+        "pam",
+        "boot"
     ],
     "l2-server": [
         "kernel",
