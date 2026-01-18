@@ -772,13 +772,15 @@ def main():
     # Generate report
     report = generate_report(args.profile, args.dry_run or args.verify, results, overall_ok, sys_info)
     
-    # Save JSON report if specified
-    if args.report:
-        save_report(report, args.report)
+    # Save JSON report - use specified path or default to hardening.json for --apply mode
+    json_report_path = args.report if args.report else ("hardening.json" if args.apply else "")
+    if json_report_path:
+        save_report(report, json_report_path)
     
-    # Save HTML report if specified
-    if args.html_report:
-        generate_html_report(report, args.html_report)
+    # Save HTML report - use specified path or default to hardening_report.html for --apply mode
+    html_report_path = args.html_report if args.html_report else ("hardening_report.html" if args.apply else "")
+    if html_report_path:
+        generate_html_report(report, html_report_path)
     
     # Print summary
     print_summary(report)
