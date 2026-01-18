@@ -3,7 +3,7 @@
     "hostname": "oel-cis-1216.coe.hv",
     "kernel": "5.15.0-205.149.5.1.el9uek.x86_64",
     "machine": "x86_64",
-    "timestamp": "2026-01-17T22:06:41.658798",
+    "timestamp": "2026-01-17T22:11:51.960069",
     "cis_benchmark": "Oracle Linux 9 v2.0.0",
     "script_version": "2.0"
   },
