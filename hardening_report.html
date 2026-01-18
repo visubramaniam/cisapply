@@ -3,871 +3,1014 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CIS Benchmark Hardening Report</title>
+    <title>CIS Compliance Report - L2-SERVER</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-            padding: 20px;
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px;
-            text-align: center;
-        }
-        
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-        
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-        
-        .metadata {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            padding: 30px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .metadata-item {
-            background: white;
-            padding: 15px;
-            border-radius: 5px;
-            border-left: 4px solid #667eea;
-        }
-        
-        .metadata-item label {
-            display: block;
-            font-size: 0.85em;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-        }
-        
-        .metadata-item value {
-            display: block;
-            font-size: 1.1em;
-            font-weight: 600;
-            color: #333;
-            word-break: break-all;
-        }
-        
-        .summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 30px;
-            background: white;
-            border-bottom: 2px solid #e9ecef;
-        }
-        
-        .summary-card {
-            background: white;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        .summary-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
-        
-        .summary-card.passed {
-            border-left: 4px solid #28a745;
-        }
-        
-        .summary-card.failed {
-            border-left: 4px solid #dc3545;
-        }
-        
-        .summary-card.total {
-            border-left: 4px solid #667eea;
-        }
-        
-        .summary-card.compliance {
-            border-left: 4px solid #ffc107;
-        }
-        
-        .summary-card .number {
-            font-size: 2.5em;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        
-        .summary-card.passed .number {
-            color: #28a745;
-        }
-        
-        .summary-card.failed .number {
-            color: #dc3545;
-        }
-        
-        .summary-card.total .number {
-            color: #667eea;
-        }
-        
-        .summary-card.compliance .number {
-            color: #ffc107;
-        }
-        
-        .summary-card .label {
-            font-size: 0.95em;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .remediation {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 30px;
-            background: #f8f9fa;
-        }
-        
-        .remediation-card {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            border: 1px solid #e9ecef;
-        }
-        
-        .remediation-card .number {
-            font-size: 2em;
-            font-weight: bold;
-            color: #667eea;
-            margin: 10px 0;
-        }
-        
-        .remediation-card .label {
-            font-size: 0.9em;
-            color: #666;
-        }
-        
-        .results-section {
-            padding: 30px;
-        }
-        
-        .results-section h2 {
-            font-size: 1.8em;
-            margin-bottom: 20px;
-            color: #333;
-            border-bottom: 3px solid #667eea;
-            padding-bottom: 10px;
-        }
-        
-        .table-wrapper {
-            overflow-x: auto;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-        }
-        
-        thead {
-            background: #f8f9fa;
-            border-bottom: 2px solid #e9ecef;
-        }
-        
-        th {
-            padding: 15px;
-            text-align: left;
-            font-weight: 600;
-            color: #333;
-            border-right: 1px solid #e9ecef;
-        }
-        
-        th:last-child {
-            border-right: none;
-        }
-        
-        td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #e9ecef;
-            border-right: 1px solid #e9ecef;
-        }
-        
-        td:last-child {
-            border-right: none;
-        }
-        
-        tbody tr:hover {
-            background: #f8f9fa;
-        }
-        
-        tbody tr.pass {
-            border-left: 4px solid #28a745;
-        }
-        
-        tbody tr.fail {
-            border-left: 4px solid #dc3545;
-        }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.85em;
-        }
-        
-        .status-badge.pass {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .status-badge.fail {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .control-id {
-            font-weight: 600;
-            color: #667eea;
-        }
-        
-        .title {
-            font-weight: 500;
-            color: #333;
-        }
-        
-        .notes-cell {
-            font-size: 0.9em;
-            color: #666;
-            max-width: 300px;
-            word-wrap: break-word;
-        }
-        
-        .changed-badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-size: 0.8em;
-            background: #e7f3ff;
-            color: #0066cc;
-        }
-        
-        .footer {
-            background: #f8f9fa;
-            padding: 20px 30px;
-            border-top: 1px solid #e9ecef;
-            color: #666;
-            text-align: center;
-            font-size: 0.9em;
-        }
-        
-        .export-info {
-            background: #e7f3ff;
-            border-left: 4px solid #667eea;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 5px;
-            color: #0066cc;
-        }
-        
-        @media print {
-            body {
-                background: white;
-                padding: 0;
-            }
-            
-            .container {
-                box-shadow: none;
-                border-radius: 0;
-            }
-            
-            .summary-card:hover,
-            tbody tr:hover {
-                transform: none;
-                box-shadow: none;
-                background: white;
-            }
-            
-            table {
-                page-break-inside: avoid;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 1.8em;
-            }
-            
-            .metadata,
-            .summary,
-            .remediation {
-                grid-template-columns: 1fr;
-            }
-            
-            table {
-                font-size: 0.9em;
-            }
-            
-            th, td {
-                padding: 8px;
-            }
-            
-            .notes-cell {
-                max-width: 200px;
-            }
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 3px solid #0066cc; padding-bottom: 10px; }
+        h2 { color: #555; margin-top: 30px; }
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }
+        .card { background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; border-left: 4px solid #0066cc; }
+        .card.passed { border-left-color: #28a745; }
+        .card.failed { border-left-color: #dc3545; }
+        .card.remediated { border-left-color: #17a2b8; }
+        .card h3 { margin: 0 0 10px 0; color: #666; font-size: 14px; text-transform: uppercase; }
+        .card .value { font-size: 36px; font-weight: bold; color: #333; }
+        .status { display: inline-block; padding: 5px 15px; border-radius: 20px; color: white; font-weight: bold; background: #28a745; }
+        .compliance { font-size: 48px; font-weight: bold; color: #28a745; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; font-weight: 600; }
+        tr:hover { background: #f5f5f5; }
+        .pass { color: #28a745; }
+        .fail { color: #dc3545; }
+        .changed { color: #17a2b8; font-weight: bold; }
+        .metadata { color: #666; font-size: 14px; margin-bottom: 20px; }
+        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>CIS Benchmark Hardening Report</h1>
-            <p>Oracle Enterprise Linux 9.x Level 2 Server with Firewalld</p>
-        </div>
-        
-        <!-- Metadata -->
+        <h1>🛡️ CIS Compliance Report</h1>
         <div class="metadata">
-            <div class="metadata-item">
-                <label>Hostname</label>
-                <value>oel-cis-1216.coe.hv</value>
-            </div>
-            <div class="metadata-item">
-                <label>Kernel</label>
-                <value>5.15.0-205.149.5.1.el9uek.x86_64</value>
-            </div>
-            <div class="metadata-item">
-                <label>Machine Type</label>
-                <value>x86_64</value>
-            </div>
-            <div class="metadata-item">
-                <label>Report Generated</label>
-                <value>2025-12-19 06:53:36 UTC</value>
-            </div>
-            <div class="metadata-item">
-                <label>CIS Benchmark</label>
-                <value>Oracle Linux 9 v2.0.0</value>
-            </div>
-            <div class="metadata-item">
-                <label>Script Version</label>
-                <value>2.0</value>
+            <strong>Profile:</strong> L2-SERVER |
+            <strong>Hostname:</strong> oel-cis-1216.coe.hv |
+            <strong>Generated:</strong> 2026-01-17T22:06:41.658798 |
+            <strong>Benchmark:</strong> Oracle Linux 9 v2.0.0
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <div class="compliance">100.0%</div>
+            <div style="color: #666; margin-top: 5px;">Compliance Score</div>
+            <div style="margin-top: 15px;">
+                <span class="status">PASS</span>
             </div>
         </div>
         
-        <!-- Execution Summary -->
         <div class="summary">
-            <div class="summary-card total">
-                <div class="label">Total Controls</div>
-                <div class="number">66</div>
+            <div class="card">
+                <h3>Total Controls</h3>
+                <div class="value">112</div>
             </div>
-            <div class="summary-card passed">
-                <div class="label">Passed</div>
-                <div class="number">66</div>
+            <div class="card passed">
+                <h3>Passed</h3>
+                <div class="value">112</div>
             </div>
-            <div class="summary-card failed">
-                <div class="label">Failed</div>
-                <div class="number">0</div>
+            <div class="card failed">
+                <h3>Failed</h3>
+                <div class="value">0</div>
             </div>
-            <div class="summary-card compliance">
-                <div class="label">Compliance Rate</div>
-                <div class="number">100.0%</div>
-            </div>
-        </div>
-        
-        <!-- Remediation Summary -->
-        <div class="remediation">
-            <div class="remediation-card">
-                <div class="label">Controls Remediated</div>
-                <div class="number">39</div>
-            </div>
-            <div class="remediation-card">
-                <div class="label">Already Compliant</div>
-                <div class="number">27</div>
-            </div>
-            <div class="remediation-card">
-                <div class="label">Execution Status</div>
-                <div class="number" style="color: #28a745;">✓ SUCCESS</div>
+            <div class="card remediated">
+                <h3>Remediated</h3>
+                <div class="value">36</div>
             </div>
         </div>
         
-        <!-- Results Table -->
-        <div class="results-section">
-            <div class="export-info">
-                ℹ️ This report shows the complete status of all 66 CIS Level 2 controls applied to your system.
-            </div>
-            
-            <h2>Detailed Control Results</h2>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Control ID</th>
-                            <th>Title</th>
-                            <th>Status</th>
-                            <th>Changed</th>
-                            <th>Notes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="pass">
-                            <td class="control-id">KERN-1</td>
-                            <td class="title">Disable uncommon filesystem/network kernel modules</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">All kernel modules configured and unloaded</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SYSCTL-1</td>
-                            <td class="title">Apply CIS sysctl hardening</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Kernel parameters hardened via sysctl</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">CRYPTO-1</td>
-                            <td class="title">Ensure system crypto policy is not LEGACY</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">Current: DEFAULT</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">BANNER-1</td>
-                            <td class="title">Set login banners and clear /etc/motd</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">Login banners configured</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SSH-1</td>
-                            <td class="title">Harden SSH daemon configuration</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">SSH hardened with CIS settings</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SUDO-1</td>
-                            <td class="title">Configure sudo to use pty and log to /var/log/sudo.log</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">Sudo configured for logging</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-avahi-daemon</td>
-                            <td class="title">Disable service: avahi-daemon</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Service masked and disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-cups</td>
-                            <td class="title">Disable service: cups</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Service masked and disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-dhcpd</td>
-                            <td class="title">Disable service: dhcpd</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Service masked and disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-slapd</td>
-                            <td class="title">Disable service: slapd</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Service masked and disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-nfs-server</td>
-                            <td class="title">Disable service: nfs-server</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Service masked and disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-rpcbind</td>
-                            <td class="title">Disable service: rpcbind</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Service masked and disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-smb</td>
-                            <td class="title">Disable service: smb</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Service masked and disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-snmpd</td>
-                            <td class="title">Disable service: snmpd</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Service masked and disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-rsyncd</td>
-                            <td class="title">Disable service: rsyncd</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Service masked and disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-ypserv</td>
-                            <td class="title">Disable service: ypserv</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Service masked and disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-telnet.socket</td>
-                            <td class="title">Disable service: telnet.socket</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Service masked and disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-tftp.socket</td>
-                            <td class="title">Disable service: tftp.socket</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Service masked and disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-systemd-journal-remote.service</td>
-                            <td class="title">Disable service: systemd-journal-remote.service</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Service masked and disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-systemd-journal-upload.service</td>
-                            <td class="title">Disable service: systemd-journal-upload.service</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Service masked and disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-AIDE-PKG</td>
-                            <td class="title">Ensure aide package is installed</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">AIDE package installed</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-AIDE-INIT</td>
-                            <td class="title">Ensure AIDE database is initialized</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">AIDE database initialized successfully</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-aidecheck.service</td>
-                            <td class="title">Enable AIDE file integrity monitoring service</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">AIDE service not available (informational)</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-aidecheck.timer</td>
-                            <td class="title">Enable AIDE file integrity monitoring timer</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">AIDE timer not available (informational)</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-auditd</td>
-                            <td class="title">Enable Audit daemon for security logging</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Auditd enabled and running</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SVC-JOURNAL-REMOTE</td>
-                            <td class="title">Ensure systemd-journal-remote is disabled</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">Journal-remote service disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">PKG-1</td>
-                            <td class="title">Remove legacy/insecure network packages</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Legacy packages removed/not installed</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">AUD-1</td>
-                            <td class="title">Install auditd and aide packages</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Audit and AIDE packages installed</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">AUD-2</td>
-                            <td class="title">Enable auditd service</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Auditd service enabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">AUD-2a</td>
-                            <td class="title">Configure auditd settings</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">Auditd configuration in place</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">AUD-3</td>
-                            <td class="title">Install CIS audit rules and load</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">Comprehensive audit rules loaded</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">LOG-1</td>
-                            <td class="title">Harden journald persistence/limits/forwarding</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">Journald hardened</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">LOG-2</td>
-                            <td class="title">Install rsyslog</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Rsyslog installed</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">LOG-3</td>
-                            <td class="title">Configure rsyslog $FileCreateMode</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">Rsyslog file creation mode configured</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">LOG-4</td>
-                            <td class="title">Enable rsyslog service</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Rsyslog service enabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">LOG-5</td>
-                            <td class="title">Enable systemd-journald service</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Journald service configured</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">LOG-6-/var/log/wtmp</td>
-                            <td class="title">Set permissions on /var/log/wtmp</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">Log file permissions correct</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">LOG-6-/var/log/btmp</td>
-                            <td class="title">Set permissions on /var/log/btmp</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">Log file permissions correct</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">LOG-6-/var/log/lastlog</td>
-                            <td class="title">Set permissions on /var/log/lastlog</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">Log file permissions correct</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">LOG-7-/var/log/messages</td>
-                            <td class="title">Set permissions on /var/log/messages</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">Log file permissions correct</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">LOG-7-/var/log/secure</td>
-                            <td class="title">Set permissions on /var/log/secure</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">Log file permissions correct</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">LOG-9</td>
-                            <td class="title">Install systemd-journal-remote</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Journal-remote installed</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">LOG-10</td>
-                            <td class="title">Disable systemd-journal-remote</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Journal-remote disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">LOG-11</td>
-                            <td class="title">Disable systemd-journal-upload</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Journal-upload disabled</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">PERM-1</td>
-                            <td class="title">Harden key system file permissions</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">System file permissions hardened</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">FW-1</td>
-                            <td class="title">Install firewalld</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Firewalld installed</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">FW-2</td>
-                            <td class="title">Enable firewalld</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Firewalld enabled and running</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">FW-3</td>
-                            <td class="title">Configure firewalld</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Firewalld configured successfully</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">BOOT-1</td>
-                            <td class="title">Ensure /boot/grub2/grub.cfg has restricted permissions</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">GRUB configuration secured</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">BOOT-2</td>
-                            <td class="title">Ensure /boot/grub2/user.cfg has restricted permissions</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">GRUB user config secured</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">BOOT-3</td>
-                            <td class="title">Ensure GRUB bootloader has password protection</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">GRUB password protection configured</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">BOOT-4</td>
-                            <td class="title">Ensure audit kernel parameters are set in /etc/default/grub</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Kernel audit parameters configured</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">BOOT-5</td>
-                            <td class="title">Ensure GRUB kernel parameters are secure</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">Kernel security parameters verified</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">AUTH-1</td>
-                            <td class="title">Configure PAM password quality and history</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">PAM hardening applied</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">AUTH-2</td>
-                            <td class="title">Configure session timeout (TMOUT)</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Session timeout configured</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">AUTH-3</td>
-                            <td class="title">Remove insecure PAM modules (nullok)</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Insecure PAM parameters removed</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">AUTH-4</td>
-                            <td class="title">Configure account lockout for root</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">Root account lockout configured</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">SELINUX-1</td>
-                            <td class="title">Ensure SELinux is enforcing</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td>No</td>
-                            <td class="notes-cell">SELinux enforcing mode active</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">AIDE-CONFIG</td>
-                            <td class="title">Ensure AIDE configuration file exists</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">AIDE configuration created</td>
-                        </tr>
-                        <tr class="pass">
-                            <td class="control-id">AIDE-2</td>
-                            <td class="title">Initialize AIDE database</td>
-                            <td><span class="status-badge pass">PASS</span></td>
-                            <td><span class="changed-badge">Yes</span></td>
-                            <td class="notes-cell">AIDE database initialized</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        <h2>Control Details</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Control ID</th>
+                    <th>CIS Ref</th>
+                    <th>Title</th>
+                    <th>Changed</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>KERN-1</code></td>
+                    <td>1.1.1.1-1.1.1.8</td>
+                    <td>Disable uncommon filesystem/network kernel modules</td>
+                    <td class="changed">Yes</td>
+                    <td>cramfs: No change; freevxfs: No change; hfs: No change; hfsplus: No change; jffs2: No change; squash...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SYSCTL-1</code></td>
+                    <td>3.1.1-3.1.3</td>
+                    <td>Apply CIS sysctl hardening</td>
+                    <td class="changed">Yes</td>
+                    <td>/etc/bashrc: line 90: TMOUT: readonly variable
+/etc/profile: line 79: TMOUT: readonly variable
+/etc/...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SYSCTL-2</code></td>
+                    <td>3.1.2</td>
+                    <td>Ensure kernel.yama.ptrace_scope is set</td>
+                    <td class="">No</td>
+                    <td>kernel.yama.ptrace_scope already set to 2</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>CRYPTO-1</code></td>
+                    <td>1.5.2</td>
+                    <td>Ensure system crypto policy is not LEGACY</td>
+                    <td class="">No</td>
+                    <td>current: DEFAULT</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>BANNER-1</code></td>
+                    <td>5.6.1-5.6.2</td>
+                    <td>Set login banners and clear /etc/motd</td>
+                    <td class="">No</td>
+                    <td>No change; No change; No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SSH-1</code></td>
+                    <td>5.2.1-5.2.22</td>
+                    <td>Harden SSH daemon configuration</td>
+                    <td class="">No</td>
+                    <td>/etc/bashrc: line 90: TMOUT: readonly variable
+/etc/profile: line 79: TMOUT: readonly variable
+/etc/...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SSH-2</code></td>
+                    <td>5.2.2</td>
+                    <td>Ensure /etc/ssh/sshd_config.d/ file permissions</td>
+                    <td class="">No</td>
+                    <td>All files already have correct permissions</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SSH-3</code></td>
+                    <td>5.2.3</td>
+                    <td>Ensure SSH config Include file permissions</td>
+                    <td class="">No</td>
+                    <td>No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SUDO-1</code></td>
+                    <td>5.3.1-5.3.3</td>
+                    <td>Configure sudo with use_pty, logging, and security settings</td>
+                    <td class="">No</td>
+                    <td>No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SUDO-2</code></td>
+                    <td>5.3.4</td>
+                    <td>Ensure sudo log file exists with proper permissions</td>
+                    <td class="">No</td>
+                    <td>/var/log/sudo.log already has correct permissions</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SUDO-3</code></td>
+                    <td>5.3.5</td>
+                    <td>Verify sudo use_pty is enabled</td>
+                    <td class="">No</td>
+                    <td>use_pty enabled in sudoers configuration</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SUDO-4</code></td>
+                    <td>5.3.6-5.3.7</td>
+                    <td>Restrict access to the su command</td>
+                    <td class="">No</td>
+                    <td>pam_wheel.so already configured in /etc/pam.d/su</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-avahi-daemon</code></td>
+                    <td>2.1.1</td>
+                    <td>Disable service: avahi-daemon</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-cups</code></td>
+                    <td>2.2.1</td>
+                    <td>Disable service: cups</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-dhcpd</code></td>
+                    <td>2.1.2</td>
+                    <td>Disable service: dhcpd</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-slapd</code></td>
+                    <td>2.1.3</td>
+                    <td>Disable service: slapd</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-nfs-server</code></td>
+                    <td>2.1.4</td>
+                    <td>Disable service: nfs-server</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-rpcbind</code></td>
+                    <td>2.1.5</td>
+                    <td>Disable service: rpcbind</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-smb</code></td>
+                    <td>2.2.2</td>
+                    <td>Disable service: smb</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-snmpd</code></td>
+                    <td>2.2.3</td>
+                    <td>Disable service: snmpd</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-rsyncd</code></td>
+                    <td>2.2.4</td>
+                    <td>Disable service: rsyncd</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-ypserv</code></td>
+                    <td>2.1.6</td>
+                    <td>Disable service: ypserv</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-telnet.socket</code></td>
+                    <td>2.3.1</td>
+                    <td>Disable service: telnet.socket</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-tftp.socket</code></td>
+                    <td>2.3.2</td>
+                    <td>Disable service: tftp.socket</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-systemd-journal-remote.service</code></td>
+                    <td>2.3.3.1</td>
+                    <td>Disable service: systemd-journal-remote.service</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-systemd-journal-upload.service</code></td>
+                    <td>2.3.3.2</td>
+                    <td>Disable service: systemd-journal-upload.service</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-AIDE-PKG</code></td>
+                    <td>6.1.1</td>
+                    <td>Ensure aide package is installed</td>
+                    <td class="">No</td>
+                    <td>Already installed: aide</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-AIDE-INIT</code></td>
+                    <td>6.1.3</td>
+                    <td>Ensure AIDE database is initialized</td>
+                    <td class="">No</td>
+                    <td>AIDE database already exists</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-aidecheck.timer</code></td>
+                    <td>6.1.5</td>
+                    <td>Enable AIDE file integrity monitoring timer</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-auditd</code></td>
+                    <td>4.1.1.4</td>
+                    <td>Enable Audit daemon for security logging</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SVC-JOURNAL-REMOTE</code></td>
+                    <td>4.2.4.2</td>
+                    <td>Ensure systemd-journal-remote is disabled</td>
+                    <td class="">No</td>
+                    <td>systemd-journal-remote.service already disabled</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>PKG-1</code></td>
+                    <td>2.4.1.1-2.4.1.8</td>
+                    <td>Remove legacy/insecure network packages</td>
+                    <td class="changed">Yes</td>
+                    <td>No match for argument: telnet
+No match for argument: telnet-server
+No match for argument: ftp
+No mat...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>PKG-2</code></td>
+                    <td>2.4.2</td>
+                    <td>Remove bluetooth packages</td>
+                    <td class="changed">Yes</td>
+                    <td>No match for argument: bluez
+No match for argument: bluez-libs
+No match for argument: bluez-obexd
+De...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>PKG-3</code></td>
+                    <td>2.4.3</td>
+                    <td>Disable unnecessary services</td>
+                    <td class="">No</td>
+                    <td>No unnecessary services found to disable</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AUD-1</code></td>
+                    <td>4.1.1.1-4.1.1.3</td>
+                    <td>Install auditd packages</td>
+                    <td class="">No</td>
+                    <td>Already installed: audit, audit-libs</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AUD-2</code></td>
+                    <td>4.1.1.4</td>
+                    <td>Enable auditd service</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AUD-2a</code></td>
+                    <td>4.1.2.1</td>
+                    <td>Configure auditd.conf settings</td>
+                    <td class="">No</td>
+                    <td>No change; No change; No change; No change; No change; No change; No change; No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AUD-3</code></td>
+                    <td>4.1.3.1-4.1.3.21</td>
+                    <td>Install CIS audit rules and load</td>
+                    <td class="">No</td>
+                    <td>No change
+/sbin/augenrules: No change
+/sbin/augenrules: Audit system is in immutable mode - exiting ...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-1</code></td>
+                    <td>4.2.1.1.1-4.2.1.1.4</td>
+                    <td>Harden journald persistence/limits/forwarding</td>
+                    <td class="">No</td>
+                    <td>No change; No change; No change; No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-2</code></td>
+                    <td>4.2.1.2</td>
+                    <td>Install rsyslog</td>
+                    <td class="">No</td>
+                    <td>Already installed: rsyslog</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-3</code></td>
+                    <td>4.2.1.3</td>
+                    <td>Configure rsyslog $FileCreateMode</td>
+                    <td class="">No</td>
+                    <td>$FileCreateMode 0640 already configured</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-4</code></td>
+                    <td>4.2.1.4</td>
+                    <td>Enable rsyslog service</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-5</code></td>
+                    <td>4.2.1.5</td>
+                    <td>Enable systemd-journald service</td>
+                    <td class="changed">Yes</td>
+                    <td>The unit files have no installation config (WantedBy=, RequiredBy=, Also=,
+Alias= settings in the [I...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-6-/var/log/wtmp</code></td>
+                    <td>N/A</td>
+                    <td>Set permissions on /var/log/wtmp</td>
+                    <td class="">No</td>
+                    <td>No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-6-/var/log/btmp</code></td>
+                    <td>N/A</td>
+                    <td>Set permissions on /var/log/btmp</td>
+                    <td class="">No</td>
+                    <td>No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-6-/var/log/lastlog</code></td>
+                    <td>N/A</td>
+                    <td>Set permissions on /var/log/lastlog</td>
+                    <td class="">No</td>
+                    <td>No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-7-/var/log/messages</code></td>
+                    <td>N/A</td>
+                    <td>Set permissions on /var/log/messages</td>
+                    <td class="">No</td>
+                    <td>No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-7-/var/log/secure</code></td>
+                    <td>N/A</td>
+                    <td>Set permissions on /var/log/secure</td>
+                    <td class="">No</td>
+                    <td>No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-8-/var/log/journal/103febaae9134c39b5dd203c49ab0726/system.journal</code></td>
+                    <td>N/A</td>
+                    <td>Set permissions on /var/log/journal/103febaae9134c39b5dd203c49ab0726/system.journal</td>
+                    <td class="">No</td>
+                    <td>No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-8-/var/log/journal/103febaae9134c39b5dd203c49ab0726/system.journal</code></td>
+                    <td>N/A</td>
+                    <td>Set permissions on /var/log/journal/103febaae9134c39b5dd203c49ab0726/system.journal</td>
+                    <td class="">No</td>
+                    <td>No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-8-/var/log/journal/103febaae9134c39b5dd203c49ab0726/user-1001.journal</code></td>
+                    <td>N/A</td>
+                    <td>Set permissions on /var/log/journal/103febaae9134c39b5dd203c49ab0726/user-1001.journal</td>
+                    <td class="">No</td>
+                    <td>No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-9</code></td>
+                    <td>4.2.2.7</td>
+                    <td>Set permissions on /var/log/sssd directory</td>
+                    <td class="">No</td>
+                    <td>No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-10</code></td>
+                    <td>4.2.3</td>
+                    <td>Ensure permissions on all logfiles</td>
+                    <td class="">No</td>
+                    <td>Log file permissions OK</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-11a</code></td>
+                    <td>4.2.4.1</td>
+                    <td>Install systemd-journal-remote</td>
+                    <td class="">No</td>
+                    <td>Already installed: systemd-journal-remote</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>LOG-11</code></td>
+                    <td>4.2.4</td>
+                    <td>Ensure systemd-journal-upload is configured</td>
+                    <td class="changed">Yes</td>
+                    <td>systemd-journal-upload enabled (configure journal_remote_url to start)</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>PERM-1</code></td>
+                    <td>5.6.1.1-5.6.1.10</td>
+                    <td>Harden key system file permissions</td>
+                    <td class="">No</td>
+                    <td>/etc/passwd: No change; /etc/group: No change; /etc/shadow: No change; /etc/gshadow: No change; /etc...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>FW-1</code></td>
+                    <td>3.4.1.1</td>
+                    <td>Install firewalld</td>
+                    <td class="">No</td>
+                    <td>Already installed: firewalld</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>FW-2</code></td>
+                    <td>3.4.1.2</td>
+                    <td>Enable firewalld</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>FW-3</code></td>
+                    <td>3.4.1.3-3.4.1.4</td>
+                    <td>Configure firewalld</td>
+                    <td class="changed">Yes</td>
+                    <td>success
+Warning: ZONE_ALREADY_SET: public
+success
+success
+success
+success
+success
+/etc/bashrc: line ...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>FW-4</code></td>
+                    <td>3.4.1.5</td>
+                    <td>Ensure nftables service is masked (firewalld manages nftables)</td>
+                    <td class="changed">Yes</td>
+                    <td>nftables service masked</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>FW-5</code></td>
+                    <td>3.4.1.6</td>
+                    <td>Configure firewalld loopback traffic rules</td>
+                    <td class="changed">Yes</td>
+                    <td>Loopback traffic rules configured</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>SEL-1</code></td>
+                    <td>1.5.1.1-1.5.1.8</td>
+                    <td>Ensure SELinux is enforcing</td>
+                    <td class="changed">Yes</td>
+                    <td>Enforcing
+/etc/bashrc: line 90: TMOUT: readonly variable
+/etc/profile: line 79: TMOUT: readonly vari...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AUTH-0</code></td>
+                    <td>5.5.1</td>
+                    <td>Install authentication packages</td>
+                    <td class="">No</td>
+                    <td>Already installed: authselect, libpwquality, pam</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AUTH-1</code></td>
+                    <td>5.5.2</td>
+                    <td>Configure password quality (pwquality.conf)</td>
+                    <td class="">No</td>
+                    <td>No change; No change; No change; No change; No change; No change; No change; No change; No change; N...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AUTH-1b</code></td>
+                    <td>5.5.3</td>
+                    <td>Configure password history (pwhistory.conf)</td>
+                    <td class="">No</td>
+                    <td>No change; No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AUTH-2</code></td>
+                    <td>5.5.4</td>
+                    <td>Configure password aging (login.defs)</td>
+                    <td class="">No</td>
+                    <td>No change; No change; No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AUTH-2a</code></td>
+                    <td>5.5.5</td>
+                    <td>Set default inactive period for new users</td>
+                    <td class="changed">Yes</td>
+                    <td>Set INACTIVE to 30 days</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AUTH-2b</code></td>
+                    <td>5.5.6</td>
+                    <td>Ensure password aging on existing user accounts</td>
+                    <td class="changed">Yes</td>
+                    <td>Applied password aging to users: root, libstoragemgmt, oelcisscan</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AUTH-3</code></td>
+                    <td>5.5.7</td>
+                    <td>Set default umask</td>
+                    <td class="changed">Yes</td>
+                    <td>/etc/bashrc: line 90: TMOUT: readonly variable
+/etc/profile: line 79: TMOUT: readonly variable
+/etc/...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AUTH-3a-/etc/bashrc</code></td>
+                    <td>N/A</td>
+                    <td>Set session timeout in /etc/bashrc</td>
+                    <td class="">No</td>
+                    <td>No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AUTH-3a-/etc/profile</code></td>
+                    <td>N/A</td>
+                    <td>Set session timeout in /etc/profile</td>
+                    <td class="">No</td>
+                    <td>No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AUTH-4</code></td>
+                    <td>5.5.9</td>
+                    <td>Enable/configure account lockout (faillock)</td>
+                    <td class="changed">Yes</td>
+                    <td>/etc/bashrc: line 90: TMOUT: readonly variable
+/etc/profile: line 79: TMOUT: readonly variable
+/etc/...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>CORE-1</code></td>
+                    <td>1.5.3</td>
+                    <td>Disable core dumps via limits.conf</td>
+                    <td class="changed">Yes</td>
+                    <td>No change; Updated /etc/sysctl.d/99-cis-hardening.conf: fs.suid_dumpable</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>CORE-2</code></td>
+                    <td>1.5.4</td>
+                    <td>Configure systemd-coredump settings (ProcessSizeMax, Storage)</td>
+                    <td class="">No</td>
+                    <td>No change; coredump.conf already has correct settings</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>CRON-0</code></td>
+                    <td>5.1.1</td>
+                    <td>Install cronie package</td>
+                    <td class="">No</td>
+                    <td>Already installed: cronie</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>CRON-1</code></td>
+                    <td>5.1.2</td>
+                    <td>Enable cron daemon</td>
+                    <td class="changed">Yes</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>CRON-2</code></td>
+                    <td>5.1.3-5.1.4</td>
+                    <td>Restrict cron/at to authorized users (create allow files)</td>
+                    <td class="">No</td>
+                    <td>No change; No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>CRON-2b</code></td>
+                    <td>5.1.5</td>
+                    <td>Remove cron.deny and at.deny files (allow files take precedence)</td>
+                    <td class="">No</td>
+                    <td>/etc/cron.deny: not present (OK); /etc/at.deny: not present (OK)</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>CRON-3</code></td>
+                    <td>5.1.6-5.1.8</td>
+                    <td>Harden cron permissions</td>
+                    <td class="">No</td>
+                    <td>/etc/crontab: No change; /etc/cron.hourly: No change; /etc/cron.daily: No change; /etc/cron.weekly: ...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>CRON-4</code></td>
+                    <td>5.1.9</td>
+                    <td>Install at package</td>
+                    <td class="">No</td>
+                    <td>Already installed: at</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AIDE-1</code></td>
+                    <td>6.1.1</td>
+                    <td>Install AIDE package</td>
+                    <td class="">No</td>
+                    <td>Already installed: aide</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AIDE-CONFIG</code></td>
+                    <td>6.1.2</td>
+                    <td>Ensure AIDE configuration file exists</td>
+                    <td class="">No</td>
+                    <td>AIDE configuration file already exists</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AIDE-2</code></td>
+                    <td>6.1.3</td>
+                    <td>AIDE database exists</td>
+                    <td class="">No</td>
+                    <td>AIDE database already initialized</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AIDE-3</code></td>
+                    <td>6.1.4</td>
+                    <td>Schedule daily AIDE integrity check</td>
+                    <td class="">No</td>
+                    <td>Daily AIDE check cron job already exists</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AIDE-3b</code></td>
+                    <td>6.1.5</td>
+                    <td>Configure AIDE systemd timer and service</td>
+                    <td class="">No</td>
+                    <td>AIDE systemd timer already configured</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AIDE-4</code></td>
+                    <td>6.1.6</td>
+                    <td>Configure AIDE email alerts</td>
+                    <td class="">No</td>
+                    <td>Email alerts disabled; set aide.email_alerts=true to enable</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>AIDE-5</code></td>
+                    <td>6.1.7</td>
+                    <td>Configure AIDE to monitor audit tools integrity</td>
+                    <td class="">No</td>
+                    <td>Audit tools already configured in AIDE</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>MNT-1</code></td>
+                    <td>1.1.2.1</td>
+                    <td>Configure tmpfs mounts for /tmp and /var/tmp</td>
+                    <td class="changed">Yes</td>
+                    <td>/etc/bashrc: line 90: TMOUT: readonly variable
+/etc/profile: line 79: TMOUT: readonly variable
+/etc/...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>MNT-2</code></td>
+                    <td>1.1.2.2</td>
+                    <td>Ensure noexec,nodev,nosuid options on /dev/shm</td>
+                    <td class="">No</td>
+                    <td>/dev/shm already has noexec,nodev,nosuid options</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>MNT-3</code></td>
+                    <td>1.1.3.1</td>
+                    <td>Ensure nodev,nosuid options on /home partition</td>
+                    <td class="">No</td>
+                    <td>/home already has nodev,nosuid options</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>MNT-4</code></td>
+                    <td>1.1.4.1</td>
+                    <td>Ensure nodev,nosuid options on /var partition</td>
+                    <td class="">No</td>
+                    <td>/var already has nodev,nosuid options</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>MNT-5</code></td>
+                    <td>1.1.5.1-1.1.5.4</td>
+                    <td>Ensure nodev,nosuid,noexec options on /var/log/audit partition</td>
+                    <td class="">No</td>
+                    <td>/var/log/audit not in /etc/fstab - MANUAL: Create separate partition for /var/log/audit</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>MNT-6</code></td>
+                    <td>1.1.6.1-1.1.6.4</td>
+                    <td>Ensure separate partition for /var/log</td>
+                    <td class="">No</td>
+                    <td>MANUAL ACTION REQUIRED: Create separate partition for /var/log</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>IPV6-0</code></td>
+                    <td>3.3.1-3.3.3</td>
+                    <td>Disable IPv6 (skipped by config)</td>
+                    <td class="">No</td>
+                    <td>ipv6.disable=false</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>PAM-1</code></td>
+                    <td>5.4.1</td>
+                    <td>Enable pam_pwhistory module in password-auth and system-auth</td>
+                    <td class="">No</td>
+                    <td>pam_pwhistory.so with use_authtok already configured in /etc/pam.d/password-auth; pam_pwhistory.so w...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>PAM-1b</code></td>
+                    <td>5.4.2</td>
+                    <td>Configure password history in /etc/security/pwhistory.conf</td>
+                    <td class="">No</td>
+                    <td>No change; No change; No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>PAM-2</code></td>
+                    <td>5.4.3</td>
+                    <td>Configure PAM session timeout</td>
+                    <td class="">No</td>
+                    <td>Session timeout configured for 600 seconds</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>PAM-3</code></td>
+                    <td>5.4.4</td>
+                    <td>Set minimum password length (login.defs)</td>
+                    <td class="">No</td>
+                    <td>No change</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>BOOT-1</code></td>
+                    <td>1.4.1</td>
+                    <td>Ensure /boot/grub2/grub.cfg has restricted permissions (600)</td>
+                    <td class="">No</td>
+                    <td>Permissions already correct (600)</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>BOOT-2</code></td>
+                    <td>1.4.2</td>
+                    <td>Ensure /boot/grub2/user.cfg has restricted permissions (600)</td>
+                    <td class="">No</td>
+                    <td>Permissions already correct (600)</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>BOOT-3</code></td>
+                    <td>1.4.3</td>
+                    <td>Ensure GRUB bootloader has password protection</td>
+                    <td class="">No</td>
+                    <td>GRUB password protection already configured</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>BOOT-3b</code></td>
+                    <td>1.4.4</td>
+                    <td>Ensure ownership and permissions of /boot/* files</td>
+                    <td class="">No</td>
+                    <td>Boot file permissions OK</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>BOOT-4</code></td>
+                    <td>1.3.1</td>
+                    <td>Ensure audit kernel parameters are set in /etc/default/grub</td>
+                    <td class="">No</td>
+                    <td>Audit kernel parameters already configured: crashkernel=1G-64G:448M,64G-:512M resume=UUID=18d42171-7...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>BOOT-5</code></td>
+                    <td>1.3.2</td>
+                    <td>Ensure GRUB kernel parameters are secure</td>
+                    <td class="">No</td>
+                    <td>Missing kernel parameters: audit=1 (Auditd enabled)
+To apply, add to /etc/default/grub GRUB_CMDLINE_...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>TCP-1</code></td>
+                    <td>3.4.2.1</td>
+                    <td>Configure /etc/hosts.allow with explicit allow rules</td>
+                    <td class="">No</td>
+                    <td>/etc/hosts.allow already properly configured</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>TCP-2</code></td>
+                    <td>3.4.2.2</td>
+                    <td>Configure /etc/hosts.deny with deny all rule</td>
+                    <td class="">No</td>
+                    <td>/etc/hosts.deny already properly configured</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>TCP-3</code></td>
+                    <td>3.4.2.3</td>
+                    <td>Verify TCP Wrappers support in system services</td>
+                    <td class="">No</td>
+                    <td>TCP Wrappers (libwrap) not linked - normal for OL9/RHEL9; hosts.allow/deny configured for documentat...</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>DNF-1</code></td>
+                    <td>1.2.1</td>
+                    <td>Ensure gpgcheck is globally activated</td>
+                    <td class="">No</td>
+                    <td>/etc/dnf/dnf.conf already has GPG checks enabled</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>DNF-2</code></td>
+                    <td>1.2.2</td>
+                    <td>Ensure gpgcheck is enabled for all repositories</td>
+                    <td class="">No</td>
+                    <td>All 4 repositories have gpgcheck enabled</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>DNF-3</code></td>
+                    <td>1.2.3</td>
+                    <td>Ensure DNF automatic security updates are configured</td>
+                    <td class="">No</td>
+                    <td>Automatic updates disabled in configuration (set dnf.enable_automatic_updates=true to enable)</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>MAIL-1</code></td>
+                    <td>2.2.14</td>
+                    <td>Configure MTA for local-only mode</td>
+                    <td class="">No</td>
+                    <td>No MTA (Postfix/Sendmail) installed - acceptable for minimal systems</td>
+                </tr>
+                <tr>
+                    <td class="pass">✅</td>
+                    <td><code>MAIL-2</code></td>
+                    <td>2.2.15</td>
+                    <td>Remove or disable unnecessary mail services</td>
+                    <td class="">No</td>
+                    <td>No unnecessary mail services found</td>
+                </tr>
+            </tbody>
+        </table>
         
-        <!-- Footer -->
         <div class="footer">
-            <p><strong>CIS Benchmark Hardening Report</strong> | Generated: 2025-12-19 06:53:36 UTC</p>
-            <p>System: oel-cis-1216.coe.hv | Profile: l2-server | Status: ✓ 100% COMPLIANT</p>
-            <p style="margin-top: 10px; opacity: 0.7;">For print-friendly view, use your browser's print function (Ctrl+P or Cmd+P)</p>
+            Generated by CIS Oracle Linux 9 Hardening Tool v2.0 |
+            Mode: APPLY |
+            Kernel: 5.15.0-205.149.5.1.el9uek.x86_64
         </div>
     </div>
 </body>
