@@ -24,101 +24,162 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Map internal control IDs to CIS Benchmark control numbers
+# Reference: CIS Oracle Linux 9 Benchmark v2.0.0
 CONTROL_MAPPING = {
-    # Kernel and Boot Security
-    "KERN-1": "1.1.1-1.1.24",
-    "SYSCTL-1": "3.1.1-3.3.2",
+    # Section 1: Initial Setup
+    # 1.1 Filesystem Configuration
+    "KERN-1": "1.1.1.1-1.1.1.8",  # Disable unused filesystems
+    "MNT-1": "1.1.2.1",           # Configure /tmp
+    "MNT-2": "1.1.2.2",           # Configure /dev/shm
+    "MNT-3": "1.1.3.1",           # Configure /home
+    "MNT-4": "1.1.4.1",           # Configure /var
+    "MNT-5": "1.1.5.1-1.1.5.4",   # Configure /var/log/audit
+    "MNT-6": "1.1.6.1-1.1.6.4",   # Configure /var/log
     
-    # Cryptography
-    "CRYPTO-1": "1.5.1",
+    # 1.2 Package Manager Configuration
+    "DNF-1": "1.2.1",             # Ensure GPG keys configured
+    "DNF-2": "1.2.2",             # Ensure gpgcheck enabled
+    "DNF-3": "1.2.3",             # Ensure repo_gpgcheck enabled
     
-    # Access Control
-    "BANNER-1": "5.4.4",
-    "SSH-1": "5.2.1-5.2.21",
-    "SUDO-1": "5.3.7",
+    # 1.3 Bootloader Configuration
+    "BOOT-4": "1.3.1",            # Ensure bootloader password is set
+    "BOOT-5": "1.3.2",            # Ensure permissions on bootloader config
     
-    # Service Management
-    "SVC-avahi-daemon": "2.1.1",
-    "SVC-cups": "2.2.1",
-    "SVC-dhcpd": "2.1.2",
-    "SVC-slapd": "2.1.3",
-    "SVC-nfs-server": "2.1.4",
-    "SVC-rpcbind": "2.1.5",
-    "SVC-smb": "2.2.2",
-    "SVC-snmpd": "2.2.3",
-    "SVC-rsyncd": "2.2.4",
-    "SVC-ypserv": "2.1.6",
-    "SVC-telnet.socket": "2.3.1",
-    "SVC-tftp.socket": "2.3.2",
+    # 1.4 Additional Process Hardening
+    "BOOT-1": "1.4.1",            # Ensure core dump backtraces disabled
+    "BOOT-2": "1.4.2",            # Ensure core dump storage disabled
+    "BOOT-3": "1.4.3",            # Ensure GRUB bootloader password
+    "BOOT-3b": "1.4.4",           # Ensure boot directory permissions
     
-    # Package Management
-    "PKG-1": "2.4.1-2.4.2",
+    # 1.5 Mandatory Access Control
+    "SEL-1": "1.5.1.1-1.5.1.8",   # SELinux configuration
+    "CRYPTO-1": "1.5.2",          # Ensure system crypto policy
+    "CORE-1": "1.5.3",            # Ensure core dumps restricted
+    "CORE-2": "1.5.4",            # Configure systemd-coredump
     
-    # Audit and Logging
-    "AUD-1": "4.1.1",
-    "AUD-2": "4.1.2",
-    "AUD-3": "4.1.3-4.1.18",
-    "LOG-1": "4.2.2.1",
-    "LOG-2": "4.2.1.1",
-    "LOG-3": "4.2.1.2",
+    # Section 2: Services
+    # 2.1 Server Services
+    "SVC-avahi-daemon": "2.1.1",  # Disable autofs
+    "SVC-dhcpd": "2.1.2",         # Disable DHCP server
+    "SVC-slapd": "2.1.3",         # Disable LDAP server
+    "SVC-nfs-server": "2.1.4",    # Disable NFS
+    "SVC-rpcbind": "2.1.5",       # Disable rpcbind
+    "SVC-ypserv": "2.1.6",        # Disable NIS server
     
-    # File Integrity and Permissions
-    "PERM-1": "5.6.1-5.6.5",
-    "AIDE-1": "6.2.1",
-    "AIDE-2": "6.2.1",
+    # 2.2 Client Services
+    "SVC-cups": "2.2.1",          # Disable CUPS
+    "SVC-smb": "2.2.2",           # Disable Samba
+    "SVC-snmpd": "2.2.3",         # Disable SNMP
+    "SVC-rsyncd": "2.2.4",        # Disable rsync daemon
+    "MAIL-1": "2.2.14",           # Configure MTA local-only
+    "MAIL-2": "2.2.15",           # Ensure unnecessary mail services removed
     
-    # Firewall and Network
-    "FW-1": "3.4.1",
-    "FW-2": "3.4.2",
-    "FW-3": "3.4.3-3.4.4",
+    # 2.3 Network Services
+    "SVC-telnet.socket": "2.3.1", # Disable telnet
+    "SVC-tftp.socket": "2.3.2",   # Disable TFTP
+    "SVC-systemd-journal-remote.service": "2.3.3.1",
+    "SVC-systemd-journal-upload.service": "2.3.3.2",
     
-    # SELinux and MAC
-    "SEL-1": "1.6.1",
+    # 2.4 Remove Legacy Packages
+    "PKG-1": "2.4.1.1-2.4.1.8",   # Remove legacy network packages
+    "PKG-2": "2.4.2",             # Remove Bluetooth packages
+    "PKG-3": "2.4.3",             # Disable unnecessary services
     
-    # Authentication and Authorization
-    "AUTH-1": "5.4.1",
-    "AUTH-2": "5.4.2",
-    "AUTH-3": "5.4.5",
-    "AUTH-4": "5.4.6",
+    # Section 3: Network Configuration
+    # 3.1 Network Parameters (Host Only)
+    "SYSCTL-1": "3.1.1-3.1.3",    # Network sysctl parameters
+    "SYSCTL-2": "3.1.2",          # Kernel YAMA ptrace scope
     
-    # System Limits
-    "CORE-1": "1.5.3",
-    "CRON-1": "5.1.1",
-    "CRON-2": "5.1.2",
-    "CRON-3": "5.1.3-5.1.5",
+    # 3.3 IPv6
+    "IPV6-0": "3.3.1-3.3.3",      # IPv6 configuration
     
-    # Mount Points
-    "MNT-1": "1.4.2",
+    # 3.4 Firewall Configuration
+    "FW-1": "3.4.1.1",            # Ensure firewalld installed
+    "FW-2": "3.4.1.2",            # Enable firewalld service
+    "FW-3": "3.4.1.3-3.4.1.4",    # Configure firewalld default/zones
+    "FW-4": "3.4.1.5",            # Ensure nftables not in use
+    "FW-5": "3.4.1.6",            # Configure loopback traffic
+    "TCP-1": "3.4.2.1",           # Configure /etc/hosts.allow
+    "TCP-2": "3.4.2.2",           # Configure /etc/hosts.deny
+    "TCP-3": "3.4.2.3",           # Ensure TCP Wrappers support
     
-    # IPv6
-    "IPV6-0": "3.3.1-3.3.2",
+    # Section 4: Logging and Auditing
+    # 4.1 Configure System Accounting
+    "AUD-1": "4.1.1.1-4.1.1.3",   # Install auditd packages
+    "AUD-2": "4.1.1.4",           # Enable auditd service
+    "AUD-2a": "4.1.2.1",          # Configure auditd.conf
+    "AUD-3": "4.1.3.1-4.1.3.21",  # Configure audit rules
     
-    # PAM Controls
-    "PAM-1": "5.3.1",
-    "PAM-2": "5.3.2",
-    "PAM-3": "5.4.4",
-    "PAM-4": "5.3.3",
+    # 4.2 Configure Logging
+    "LOG-1": "4.2.1.1.1-4.2.1.1.4", # Configure journald
+    "LOG-2": "4.2.1.2",           # Install rsyslog
+    "LOG-3": "4.2.1.3",           # Configure rsyslog FileCreateMode
+    "LOG-4": "4.2.1.4",           # Enable rsyslog service
+    "LOG-5": "4.2.1.5",           # Enable journald service
+    "LOG-6": "4.2.2.1-4.2.2.3",   # Log file permissions (wtmp/btmp/lastlog)
+    "LOG-7": "4.2.2.4-4.2.2.5",   # Log file permissions (messages/secure)
+    "LOG-8": "4.2.2.6",           # Journal file permissions
+    "LOG-9": "4.2.2.7",           # SSSD log permissions
+    "LOG-10": "4.2.3",            # Ensure all logfiles permissions
+    "LOG-11": "4.2.4",            # Configure systemd-journal-upload
+    "LOG-11a": "4.2.4.1",         # Install systemd-journal-remote
+    "SVC-JOURNAL-REMOTE": "4.2.4.2", # Ensure journal-remote disabled
     
-    # Boot Hardening
-    "BOOT-1": "1.4.1",
-    "BOOT-2": "1.4.2",
-    "BOOT-3": "1.4.3",
-    "BOOT-4": "1.3.1",
-    "BOOT-5": "1.3.2",
+    # Section 5: Access, Authentication and Authorization
+    # 5.1 Configure cron
+    "CRON-0": "5.1.1",            # Install cronie
+    "CRON-1": "5.1.2",            # Enable cron daemon
+    "CRON-2": "5.1.3-5.1.4",      # Restrict cron/at to authorized users
+    "CRON-2b": "5.1.5",           # Remove cron.deny/at.deny
+    "CRON-3": "5.1.6-5.1.8",      # Cron file permissions
+    "CRON-4": "5.1.9",            # Install at package
     
-    # TCP Wrappers
-    "TCP-1": "3.4.1",
-    "TCP-2": "3.4.2",
-    "TCP-3": "3.4.3",
+    # 5.2 SSH Server Configuration
+    "SSH-1": "5.2.1-5.2.22",      # SSH daemon configuration
+    "SSH-2": "5.2.2",             # SSH config.d permissions
+    "SSH-3": "5.2.3",             # SSH Include file permissions
     
-    # DNF/Package Manager Security
-    "DNF-1": "1.2.1",
-    "DNF-2": "1.2.2",
-    "DNF-3": "1.2.3",
+    # 5.3 Privilege Escalation
+    "SUDO-1": "5.3.1-5.3.3",      # Configure sudo
+    "SUDO-2": "5.3.4",            # Sudo log file
+    "SUDO-3": "5.3.5",            # Sudo use_pty
+    "SUDO-4": "5.3.6-5.3.7",      # Restrict su command
     
-    # Postfix/Mail
-    "MAIL-1": "2.2.14",
-    "MAIL-2": "2.2.15",
+    # 5.4 PAM Configuration
+    "PAM-1": "5.4.1",             # Configure password hashing
+    "PAM-1b": "5.4.2",            # Configure password history
+    "PAM-2": "5.4.3",             # PAM session timeout
+    "PAM-3": "5.4.4",             # Minimum password length
+    
+    # 5.5 User Accounts and Environment
+    "AUTH-0": "5.5.1",            # Install authentication packages
+    "AUTH-1": "5.5.2",            # Configure password quality
+    "AUTH-1b": "5.5.3",           # Configure password history
+    "AUTH-2": "5.5.4",            # Configure password aging
+    "AUTH-2a": "5.5.5",           # Set default inactive period
+    "AUTH-2b": "5.5.6",           # Password aging on existing users
+    "AUTH-3": "5.5.7",            # Set default umask
+    "AUTH-3a": "5.5.8",           # Set session timeout
+    "AUTH-4": "5.5.9",            # Configure faillock
+    "BANNER-1": "5.6.1-5.6.2",    # Login banners
+    
+    # 5.6 File Permissions
+    "PERM-1": "5.6.1.1-5.6.1.10", # System file permissions
+    
+    # Section 6: System Maintenance
+    # 6.1 AIDE Configuration
+    "AIDE-1": "6.1.1",            # Install AIDE
+    "AIDE-CONFIG": "6.1.2",       # AIDE configuration file
+    "AIDE-2": "6.1.3",            # AIDE database exists
+    "AIDE-3": "6.1.4",            # Schedule AIDE check (cron)
+    "AIDE-3b": "6.1.5",           # AIDE systemd timer
+    "AIDE-4": "6.1.6",            # AIDE email alerts
+    "AIDE-5": "6.1.7",            # AIDE audit tools integrity
+    "SVC-AIDE-PKG": "6.1.1",      # AIDE package installed
+    "SVC-AIDE-INIT": "6.1.3",     # AIDE database initialized
+    "SVC-aidecheck.service": "6.1.5", # AIDE check service
+    "SVC-aidecheck.timer": "6.1.5",   # AIDE check timer
+    "SVC-auditd": "4.1.1.4",      # Enable auditd service
 }
 
 # Module dependencies for proper ordering
@@ -722,14 +783,22 @@ def main():
     # Print summary
     print_summary(report)
     
-    # Print results (compact)
+    # Print results (compact) with CIS control section numbers
     print("Control Results:")
+    print(f"  {'':3} {'':1} {'Control ID':<24} {'CIS Section':<18} {'Description'}")
+    print(f"  {'-'*3} {'-'*1} {'-'*24} {'-'*18} {'-'*40}")
     for r in results:
         status = "✅" if r.ok else "❌"
         changed = "*" if r.changed else " "
         r_id = r.id if hasattr(r, 'id') else "UNKNOWN"
         title = r.title if hasattr(r, 'title') else "Unknown"
-        print(f"  {status} {changed} {r_id:20} {title}")
+        # Look up CIS control number, handle dynamic IDs (e.g., LOG-6-/var/log/wtmp)
+        cis_section = CONTROL_MAPPING.get(r_id, "")
+        if not cis_section:
+            # Try matching base ID (e.g., LOG-6 from LOG-6-/var/log/wtmp)
+            base_id = r_id.split('-')[0] + '-' + r_id.split('-')[1] if '-' in r_id and len(r_id.split('-')) > 1 else r_id
+            cis_section = CONTROL_MAPPING.get(base_id, "N/A")
+        print(f"  {status} {changed} {r_id:<24} {cis_section:<18} {title}")
     
     sys.exit(0 if overall_ok else 1)
 

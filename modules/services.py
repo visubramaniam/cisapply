@@ -25,8 +25,9 @@ UNWANTED = [
 ]
 
 # Services that should be enabled/started for CIS compliance
+# Note: aidecheck.service is a static oneshot service triggered by aidecheck.timer
+# We only need to enable the timer, not the service itself
 REQUIRED = {
-    "aidecheck.service": "AIDE file integrity monitoring service",
     "aidecheck.timer": "AIDE file integrity monitoring timer",
     "auditd": "Audit daemon for security logging",
 }
@@ -110,40 +111,9 @@ def apply(cfg: Dict[str, Any], dry_run: bool, profile: str) -> List[ActionResult
         files=files
     ))
     
-    # Enable and start AIDE services/timers
+    # Enable AIDE timer (timer will trigger the static aidecheck.service)
     for service, description in REQUIRED.items():
-        if service in ["aidecheck.service", "aidecheck.timer"]:
-            # Check if these services exist before trying to enable them
-            # Note: These services are created by aide.py module, which runs later
-            try:
-                cmd = ["systemctl", "list-unit-files", service]
-                cp = run(cmd)
-                if cp.returncode == 0 and service in cp.stdout:
-                    ensure_service_enabled(service, dry_run, results, f"SVC-{service}", f"Enable {description}", state="enable")
-                else:
-                    # Service not found - this is OK, it will be created by aide.py module
-                    results.append(ActionResult(
-                        id=f"SVC-{service}",
-                        title=f"Enable {description}",
-                        changed=False,
-                        ok=True,
-                        notes=f"{service} will be created by aide module",
-                        commands=[],
-                        files=[]
-                    ))
-            except Exception as e:
-                # Don't fail on service check errors
-                results.append(ActionResult(
-                    id=f"SVC-{service}",
-                    title=f"Enable {description}",
-                    changed=False,
-                    ok=True,
-                    notes=f"Service check skipped: {str(e)}",
-                    commands=[],
-                    files=[]
-                ))
-        else:
-            ensure_service_enabled(service, dry_run, results, f"SVC-{service}", f"Enable {description}", state="enable")
+        ensure_service_enabled(service, dry_run, results, f"SVC-{service}", f"Enable {description}", state="enable")
     
     # Ensure systemd-journal-remote is disabled
     control_id = "SVC-JOURNAL-REMOTE"
