@@ -35,7 +35,7 @@
         <div class="metadata">
             <strong>Profile:</strong> L2-SERVER |
             <strong>Hostname:</strong> oel-cis-1216.coe.hv |
-            <strong>Generated:</strong> 2026-01-17T23:03:50.001058 |
+            <strong>Generated:</strong> 2026-01-17T23:07:24.917260 |
             <strong>Benchmark:</strong> Oracle Linux 9 v2.0.0
         </div>
         
@@ -50,11 +50,11 @@
         <div class="summary">
             <div class="card">
                 <h3>Total Controls</h3>
-                <div class="value">112</div>
+                <div class="value">111</div>
             </div>
             <div class="card passed">
                 <h3>Passed</h3>
-                <div class="value">112</div>
+                <div class="value">111</div>
             </div>
             <div class="card failed">
                 <h3>Failed</h3>
@@ -62,7 +62,7 @@
             </div>
             <div class="card remediated">
                 <h3>Remediated</h3>
-                <div class="value">40</div>
+                <div class="value">38</div>
             </div>
         </div>
         
@@ -93,8 +93,9 @@
                     <td>3.1.1-3.1.3</td>
                     <td>Apply CIS sysctl hardening</td>
                     <td class="changed">Yes</td>
-                    <td>* Applying /usr/lib/sysctl.d/01-unprivileged-bpf.conf ...
-* Applying /usr/lib/sysctl.d/10-default-ya...</td>
+                    <td>/etc/bashrc: line 90: TMOUT: readonly variable
+/etc/profile: line 79: TMOUT: readonly variable
+/etc/...</td>
                 </tr>
                 <tr>
                     <td class="pass">✅</td>
@@ -117,8 +118,8 @@
                     <td><code>BANNER-1</code></td>
                     <td>5.6.1-5.6.2</td>
                     <td>Set login banners and clear /etc/motd</td>
-                    <td class="changed">Yes</td>
-                    <td>No change; No change; Wrote /etc/motd</td>
+                    <td class="">No</td>
+                    <td>No change; No change; No change</td>
                 </tr>
                 <tr>
                     <td class="pass">✅</td>
@@ -126,7 +127,9 @@
                     <td>5.2.1-5.2.22</td>
                     <td>Harden SSH daemon configuration</td>
                     <td class="changed">Yes</td>
-                    <td></td>
+                    <td>/etc/bashrc: line 90: TMOUT: readonly variable
+/etc/profile: line 79: TMOUT: readonly variable
+/etc/...</td>
                 </tr>
                 <tr>
                     <td class="pass">✅</td>
@@ -334,9 +337,10 @@
                     <td>2.4.1.1-2.4.1.8</td>
                     <td>Remove legacy/insecure network packages</td>
                     <td class="changed">Yes</td>
-                    <td>Waiting for process with pid 305396 to finish.
-No match for argument: telnet
-No match for argument: ...</td>
+                    <td>No match for argument: telnet
+No match for argument: telnet-server
+No match for argument: ftp
+No mat...</td>
                 </tr>
                 <tr>
                     <td class="pass">✅</td>
@@ -564,7 +568,8 @@ success
 success
 success
 success
-success</td>
+success
+/etc/bashrc: line ...</td>
                 </tr>
                 <tr>
                     <td class="pass">✅</td>
@@ -588,7 +593,9 @@ success</td>
                     <td>1.5.1.1-1.5.1.8</td>
                     <td>Ensure SELinux is enforcing</td>
                     <td class="changed">Yes</td>
-                    <td>Enforcing</td>
+                    <td>Enforcing
+/etc/bashrc: line 90: TMOUT: readonly variable
+/etc/profile: line 79: TMOUT: readonly vari...</td>
                 </tr>
                 <tr>
                     <td class="pass">✅</td>
@@ -644,23 +651,17 @@ success</td>
                     <td>5.5.7</td>
                     <td>Set default umask</td>
                     <td class="changed">Yes</td>
-                    <td></td>
+                    <td>/etc/bashrc: line 90: TMOUT: readonly variable
+/etc/profile: line 79: TMOUT: readonly variable
+/etc/...</td>
                 </tr>
                 <tr>
                     <td class="pass">✅</td>
-                    <td><code>AUTH-3a-/etc/bashrc</code></td>
-                    <td>N/A</td>
-                    <td>Set session timeout in /etc/bashrc</td>
+                    <td><code>AUTH-3a</code></td>
+                    <td>5.5.8</td>
+                    <td>Set session timeout via profile.d</td>
                     <td class="changed">Yes</td>
-                    <td>Updated /etc/bashrc: TMOUT</td>
-                </tr>
-                <tr>
-                    <td class="pass">✅</td>
-                    <td><code>AUTH-3a-/etc/profile</code></td>
-                    <td>N/A</td>
-                    <td>Set session timeout in /etc/profile</td>
-                    <td class="changed">Yes</td>
-                    <td>Updated /etc/profile: TMOUT</td>
+                    <td>Created /etc/profile.d/cis-tmout.sh with TMOUT=900</td>
                 </tr>
                 <tr>
                     <td class="pass">✅</td>
@@ -668,9 +669,8 @@ success</td>
                     <td>5.5.9</td>
                     <td>Enable/configure account lockout (faillock)</td>
                     <td class="changed">Yes</td>
-                    <td>/etc/bashrc: line 90: TMOUT: readonly variable
-/etc/profile: line 79: TMOUT: readonly variable
-/etc/...</td>
+                    <td>[error] [/etc/authselect/system-auth] has unexpected content!
+[error] [/etc/authselect/password-auth...</td>
                 </tr>
                 <tr>
                     <td class="pass">✅</td>
@@ -798,9 +798,7 @@ success</td>
                     <td>1.1.2.1</td>
                     <td>Configure tmpfs mounts for /tmp and /var/tmp</td>
                     <td class="changed">Yes</td>
-                    <td>/etc/bashrc: line 90: TMOUT: readonly variable
-/etc/profile: line 79: TMOUT: readonly variable
-/etc/...</td>
+                    <td></td>
                 </tr>
                 <tr>
                     <td class="pass">✅</td>
