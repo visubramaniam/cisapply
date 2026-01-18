@@ -19,14 +19,46 @@ def run(cmd: List[str], check: bool=False) -> subprocess.CompletedProcess:
 def is_root() -> bool:
     return os.geteuid() == 0
 
+def is_pkg_installed(pkg: str) -> bool:
+    """Check if a package is already installed using rpm -q"""
+    cp = subprocess.run(["rpm", "-q", pkg], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    return cp.returncode == 0
+
 def ensure_pkg(pkgs: List[str], dry_run: bool, results: List[ActionResult], rid: str, title: str):
-    cmd = ["dnf","-y","install"] + pkgs
-    if dry_run:
-        results.append(ActionResult(rid, title, False, True, notes="DRY-RUN: would run " + shlex.join(cmd), commands=[shlex.join(cmd)]))
+    """Install packages if not already installed"""
+    # First check which packages need to be installed
+    pkgs_to_install = []
+    already_installed = []
+    
+    for pkg in pkgs:
+        if is_pkg_installed(pkg):
+            already_installed.append(pkg)
+        else:
+            pkgs_to_install.append(pkg)
+    
+    # If all packages are already installed, report success
+    if not pkgs_to_install:
+        results.append(ActionResult(rid, title, False, True, 
+                                    notes=f"Already installed: {', '.join(already_installed)}",
+                                    commands=[]))
         return
+    
+    cmd = ["dnf", "-y", "install"] + pkgs_to_install
+    if dry_run:
+        results.append(ActionResult(rid, title, False, True, 
+                                    notes=f"DRY-RUN: would install {', '.join(pkgs_to_install)}" + 
+                                          (f"; already installed: {', '.join(already_installed)}" if already_installed else ""),
+                                    commands=[shlex.join(cmd)]))
+        return
+    
     cp = run(cmd)
-    ok = (cp.returncode==0)
-    results.append(ActionResult(rid, title, True if ok else False, ok, notes=(cp.stdout+cp.stderr).strip(), commands=[shlex.join(cmd)]))
+    ok = (cp.returncode == 0)
+    notes = (cp.stdout + cp.stderr).strip()
+    if already_installed:
+        notes += f"; Already installed: {', '.join(already_installed)}"
+    
+    results.append(ActionResult(rid, title, True if ok else False, ok, 
+                                notes=notes, commands=[shlex.join(cmd)]))
 
 def ensure_service_enabled(service: str, dry_run: bool, results: List[ActionResult], rid: str, title: str, state: str="enable"):
     if state=="enable":
