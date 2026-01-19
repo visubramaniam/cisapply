@@ -9,7 +9,7 @@
 | **OS** | N/A |
 | **Kernel** | 5.15.0-205.149.5.1.el9uek.x86_64 |
 | **Benchmark** | Oracle Linux 9 v2.0.0 |
-| **Generated** | 2026-01-17T23:07:24.917260 |
+| **Generated** | 2026-01-19T07:31:51.684051 |
 | **Mode** | APPLY |
 
 ## Compliance Score
@@ -35,11 +35,11 @@
 | Status | Control ID | CIS Section | Title | Changed | Notes |
 |--------|------------|-------------|-------|---------|-------|
 | ✅ | `KERN-1` | 1.1.1.1-1.1.1.8 | Disable uncommon filesystem/network kernel modules | Yes | cramfs: No change; freevxfs: No change; hfs: No change; hfsp... |
-| ✅ | `SYSCTL-1` | 3.1.1-3.1.3 | Apply CIS sysctl hardening | Yes | /etc/bashrc: line 90: TMOUT: readonly variable /etc/profile:... |
+| ✅ | `SYSCTL-1` | 3.1.1-3.1.3 | Apply CIS sysctl hardening | Yes | * Applying /usr/lib/sysctl.d/01-unprivileged-bpf.conf ... * ... |
 | ✅ | `SYSCTL-2` | 3.1.2 | Ensure kernel.yama.ptrace_scope is set | No | kernel.yama.ptrace_scope already set to 2 |
 | ✅ | `CRYPTO-1` | 1.5.2 | Ensure system crypto policy is not LEGACY | No | current: DEFAULT |
-| ✅ | `BANNER-1` | 5.6.1-5.6.2 | Set login banners and clear /etc/motd | No | No change; No change; No change |
-| ✅ | `SSH-1` | 5.2.1-5.2.22 | Harden SSH daemon configuration | Yes | /etc/bashrc: line 90: TMOUT: readonly variable /etc/profile:... |
+| ✅ | `BANNER-1` | 5.6.1-5.6.2 | Set login banners and clear /etc/motd | Yes | No change; No change; Wrote /etc/motd |
+| ✅ | `SSH-1` | 5.2.1-5.2.22 | Harden SSH daemon configuration | No |  |
 | ✅ | `SSH-2` | 5.2.2 | Ensure /etc/ssh/sshd_config.d/ file permissions | No | All files already have correct permissions |
 | ✅ | `SSH-3` | 5.2.3 | Ensure SSH config Include file permissions | No | No change |
 | ✅ | `SUDO-1` | 5.3.1-5.3.3 | Configure sudo with use_pty, logging, and security settings | No | No change |
@@ -95,14 +95,14 @@
 | ✅ | `FW-3` | 3.4.1.3-3.4.1.4 | Configure firewalld | Yes | success Warning: ZONE_ALREADY_SET: public success success su... |
 | ✅ | `FW-4` | 3.4.1.5 | Ensure nftables service is masked (firewalld manages nftables) | Yes | nftables service masked |
 | ✅ | `FW-5` | 3.4.1.6 | Configure firewalld loopback traffic rules | Yes | Loopback traffic rules configured |
-| ✅ | `SEL-1` | 1.5.1.1-1.5.1.8 | Ensure SELinux is enforcing | Yes | Enforcing /etc/bashrc: line 90: TMOUT: readonly variable /et... |
+| ✅ | `SEL-1` | 1.5.1.1-1.5.1.8 | Ensure SELinux is enforcing | Yes | Enforcing |
 | ✅ | `AUTH-0` | 5.5.1 | Install authentication packages | No | Already installed: authselect, libpwquality, pam |
 | ✅ | `AUTH-1` | 5.5.2 | Configure password quality (pwquality.conf) | No | No change; No change; No change; No change; No change; No ch... |
 | ✅ | `AUTH-1b` | 5.5.3 | Configure password history (pwhistory.conf) | No | No change; No change |
 | ✅ | `AUTH-2` | 5.5.4 | Configure password aging (login.defs) | No | No change; No change; No change |
 | ✅ | `AUTH-2a` | 5.5.5 | Set default inactive period for new users | Yes | Set INACTIVE to 30 days |
 | ✅ | `AUTH-2b` | 5.5.6 | Ensure password aging on existing user accounts | Yes | Applied password aging to users: root, libstoragemgmt, oelci... |
-| ✅ | `AUTH-3` | 5.5.7 | Set default umask | Yes | /etc/bashrc: line 90: TMOUT: readonly variable /etc/profile:... |
+| ✅ | `AUTH-3` | 5.5.7 | Set default umask | Yes |  |
 | ✅ | `AUTH-3a` | 5.5.8 | Set session timeout via profile.d | Yes | Created /etc/profile.d/cis-tmout.sh with TMOUT=900 |
 | ✅ | `AUTH-4` | 5.5.9 | Enable/configure account lockout (faillock) | Yes | [error] [/etc/authselect/system-auth] has unexpected content... |
 | ✅ | `CORE-1` | 1.5.3 | Disable core dumps via limits.conf | Yes | No change; Updated /etc/sysctl.d/99-cis-hardening.conf: fs.s... |
