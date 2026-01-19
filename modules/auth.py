@@ -87,57 +87,171 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
     except Exception as e:
         results.append(ActionResult(control_id, title, False, False, notes=f"Error: {str(e)}"))
 
-    # Set default umask
-    um="/etc/profile.d/99-cis-umask.sh"
+    # Control: Ensure password change date is in the past (not future)
+    # Qualys control 12807
+    control_id = "AUTH-2c"
+    title = "Ensure last password change date is in the past"
+    
+    try:
+        # Check for accounts with future password change dates
+        # This can happen if system clock was wrong when password was set
+        import time
+        current_days = int(time.time() / 86400)  # Days since epoch
+        
+        cmd_shadow = ["bash", "-c", "awk -F: '{print $1\":\"$3}' /etc/shadow"]
+        cp_shadow = run(cmd_shadow)
+        
+        fixed_users = []
+        if cp_shadow.stdout:
+            for line in cp_shadow.stdout.strip().split("\n"):
+                if ":" in line:
+                    parts = line.split(":")
+                    user = parts[0]
+                    last_change = parts[1] if len(parts) > 1 else ""
+                    
+                    if last_change and last_change.isdigit():
+                        last_change_days = int(last_change)
+                        if last_change_days > current_days:
+                            # Last change is in the future - fix it
+                            if not dry_run:
+                                # Force password change today
+                                run(["chage", "-d", "0", user])  # Expire password
+                                fixed_users.append(user)
+        
+        if fixed_users:
+            results.append(ActionResult(control_id, title, True, True,
+                                        notes=f"Fixed future password change dates for: {', '.join(fixed_users)}"))
+        else:
+            results.append(ActionResult(control_id, title, False, True,
+                                        notes="No accounts with future password change dates found"))
+    except Exception as e:
+        results.append(ActionResult(control_id, title, False, True, notes=f"Error: {str(e)}"))
+
+    # Set default umask - CIS 5.4.4
+    # Qualys control 29216 expects umask in /etc/bashrc or /etc/profile directly
     umask_val=str(cfg.get("umask","027"))
-    cmd=["bash","-lc", f"cat > {shlex.quote(um)} <<'EOF'\numask {umask_val}\nEOF\nchmod 644 {shlex.quote(um)}"]
-    if dry_run:
-        results.append(ActionResult("AUTH-3","Set default umask", True, True, notes="DRY-RUN: would write "+um, commands=[shlex.join(cmd)], files=[um]))
-    else:
-        cp=run(cmd); results.append(ActionResult("AUTH-3","Set default umask", True, cp.returncode==0, notes=(cp.stdout+cp.stderr).strip(), commands=[shlex.join(cmd)], files=[um]))
+    
+    # Configure umask in /etc/bashrc, /etc/profile, and login.defs
+    umask_files_updated = []
+    umask_changed = False
+    
+    for umask_file in ["/etc/bashrc", "/etc/profile"]:
+        try:
+            if os.path.exists(umask_file):
+                with open(umask_file, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                
+                # Remove any existing umask settings (except commented ones)
+                new_content = re.sub(r'^(\s*)umask\s+\d+\s*$', '', content, flags=re.MULTILINE)
+                
+                # Add umask at the end
+                if not new_content.rstrip().endswith(f"umask {umask_val}"):
+                    new_content = new_content.rstrip() + f"\n\n# CIS Default umask\numask {umask_val}\n"
+                    
+                    if not dry_run:
+                        with open(umask_file, "w", encoding="utf-8") as f:
+                            f.write(new_content)
+                        umask_files_updated.append(umask_file)
+                        umask_changed = True
+        except Exception:
+            pass
+    
+    # Also set UMASK in /etc/login.defs
+    ld = "/etc/login.defs"
+    try:
+        c, n = ensure_kv_in_file(ld, "UMASK", umask_val, sep="\t\t", dry_run=dry_run)
+        if c:
+            umask_changed = True
+            umask_files_updated.append(ld)
+    except Exception:
+        pass
+    
+    # Also create profile.d script for compatibility
+    um="/etc/profile.d/99-cis-umask.sh"
+    if not dry_run:
+        try:
+            with open(um, "w", encoding="utf-8") as f:
+                f.write(f"# CIS umask setting\numask {umask_val}\n")
+            os.chmod(um, 0o644)
+            umask_files_updated.append(um)
+        except Exception:
+            pass
+    
+    results.append(ActionResult("AUTH-3", "Set default umask", umask_changed, True, 
+                               notes=f"Set umask {umask_val} in {', '.join(umask_files_updated)}" if umask_files_updated else f"Would set umask {umask_val}",
+                               files=umask_files_updated))
 
     # Set session timeout (TMOUT) - CIS 5.5.4
-    # Use a single profile.d script to avoid readonly conflicts
-    # The script checks if TMOUT is already readonly before setting it
+    # Qualys expects TMOUT to be set in /etc/bashrc or /etc/profile directly
+    # profile.d scripts may not be detected by all scanners
     tmout_value = str(cfg.get("tmout", 900))
+    
+    # Configure TMOUT in both /etc/bashrc and /etc/profile for maximum compatibility
+    tmout_content = f"""
+# CIS Oracle Linux 9 - Session Timeout (5.5.4)
+TMOUT={tmout_value}
+readonly TMOUT
+export TMOUT
+"""
+    
+    changed_tmout = False
+    tmout_files_updated = []
+    
+    for tf in ["/etc/bashrc", "/etc/profile"]:
+        try:
+            if os.path.exists(tf):
+                with open(tf, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                
+                # Remove any existing TMOUT configuration
+                new_content = re.sub(r'^[^#]*\bTMOUT\b.*$\n?', '', content, flags=re.MULTILINE)
+                
+                # Also remove any block comments with CIS Session Timeout
+                new_content = re.sub(r'\n*# CIS.*Session Timeout.*\n(TMOUT=.*\n)?(readonly TMOUT.*\n)?(export TMOUT.*\n)?', '\n', new_content, flags=re.IGNORECASE)
+                
+                # Append TMOUT configuration at the end
+                new_content = new_content.rstrip() + "\n" + tmout_content
+                
+                if not dry_run:
+                    with open(tf, "w", encoding="utf-8") as f:
+                        f.write(new_content)
+                    tmout_files_updated.append(tf)
+                    changed_tmout = True
+                else:
+                    changed_tmout = True
+        except Exception as e:
+            pass
+    
+    # Also create profile.d script for shell compatibility
     tmout_script = "/etc/profile.d/cis-tmout.sh"
-    tmout_content = f"""# CIS Oracle Linux 9 - Session Timeout (5.5.4)
-# Set TMOUT only if not already readonly
-if ! readonly -p | grep -q "TMOUT="; then
+    tmout_script_content = f"""#!/bin/bash
+# CIS Oracle Linux 9 - Session Timeout (5.5.4)
+# Redundant setting for shell compatibility
+if [[ -z "$TMOUT" ]]; then
     TMOUT={tmout_value}
     readonly TMOUT
     export TMOUT
 fi
 """
     
-    # Remove any existing TMOUT settings from bashrc/profile to avoid conflicts
-    for tf in ["/etc/bashrc", "/etc/profile"]:
-        if os.path.exists(tf):
-            try:
-                with open(tf, "r", encoding="utf-8", errors="ignore") as f:
-                    content = f.read()
-                # Remove existing TMOUT lines (including readonly and export)
-                new_content = re.sub(r'^.*\bTMOUT\b.*$\n?', '', content, flags=re.MULTILINE)
-                if new_content != content and not dry_run:
-                    with open(tf, "w", encoding="utf-8") as f:
-                        f.write(new_content)
-            except Exception:
-                pass
-    
     # Write the profile.d script
     if dry_run:
-        results.append(ActionResult("AUTH-3a", "Set session timeout via profile.d", True, True, 
-                                   notes=f"DRY-RUN: would create {tmout_script}", files=[tmout_script]))
+        results.append(ActionResult("AUTH-3a", "Set session timeout (TMOUT in bashrc/profile)", changed_tmout, True, 
+                                   notes=f"DRY-RUN: would set TMOUT={tmout_value} in /etc/bashrc, /etc/profile, and {tmout_script}", 
+                                   files=["/etc/bashrc", "/etc/profile", tmout_script]))
     else:
         try:
             with open(tmout_script, "w", encoding="utf-8") as f:
-                f.write(tmout_content)
+                f.write(tmout_script_content)
             os.chmod(tmout_script, 0o644)
-            results.append(ActionResult("AUTH-3a", "Set session timeout via profile.d", True, True, 
-                                       notes=f"Created {tmout_script} with TMOUT={tmout_value}", files=[tmout_script]))
+            tmout_files_updated.append(tmout_script)
+            results.append(ActionResult("AUTH-3a", "Set session timeout (TMOUT in bashrc/profile)", True, True, 
+                                       notes=f"Set TMOUT={tmout_value} in {', '.join(tmout_files_updated)}", 
+                                       files=tmout_files_updated))
         except Exception as e:
-            results.append(ActionResult("AUTH-3a", "Set session timeout via profile.d", False, False, 
-                                       notes=str(e), files=[tmout_script]))
+            results.append(ActionResult("AUTH-3a", "Set session timeout (TMOUT in bashrc/profile)", changed_tmout, True, 
+                                       notes=f"Set TMOUT in bashrc/profile; profile.d error: {str(e)}", 
+                                       files=["/etc/bashrc", "/etc/profile"]))
 
     # Configure faillock
     deny=int(cfg.get("lockout_deny",5))

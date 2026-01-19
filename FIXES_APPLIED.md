@@ -2,9 +2,68 @@
 
 ## Summary
 
-**Updated: January 14, 2026**
+**Updated: January 19, 2026**
 
-All **127 failing CIS controls** from CONTROL.csv have been systematically addressed by updating **14 Python modules** to implement the required security hardening measures for Oracle Enterprise Linux 9.x CIS Benchmark v2.0.0 Level 2 Server profile.
+All **127 failing CIS controls** from CONTROL.csv plus **40 additional controls** identified in the January 19, 2026 Qualys scan have been systematically addressed by updating Python modules to implement the required security hardening measures for Oracle Enterprise Linux 9.x CIS Benchmark v2.0.0 Level 2 Server profile.
+
+## Recent Fixes (January 19, 2026)
+
+Based on Qualys scan results, the following controls were fixed:
+
+### SSH Module (modules/ssh.py)
+- **26772** - PermitRootLogin configured
+- **26814** - LogLevel set to VERBOSE
+- **26995** - Ciphers configured
+- **26996** - MACs configured  
+- **26785** - ClientAliveCountMax configured
+- **29021** - GSSAPIAuthentication disabled
+- **26879** - AllowGroups configured
+- **26882** - DenyUsers configured (set to 'nobody')
+- **26881** - DenyGroups configured (set to 'nobody')
+
+### PAM Module (modules/pam.py)
+- **29449** - remember argument in pwhistory.conf
+- **28408** - remember argument in password-auth
+- **28409** - remember argument in system-auth
+
+### Auth Module (modules/auth.py)
+- **29456** - TMOUT now set directly in /etc/bashrc and /etc/profile
+- **29216** - umask now set in /etc/bashrc, /etc/profile, and login.defs
+- **29165** - Password max days configured
+- **29162** - Password min days configured  
+- **12807** - Last password change date verification
+
+### Sysctl Module (modules/sysctl.py)
+- **28632** - ptrace_scope in config files
+- **20632** - ptrace_scope runtime value set
+
+### Firewalld Module (modules/firewalld.py)
+- **20626** - nftables service stopped
+- **17128** - nftables service disabled and masked
+
+### Logging Module (modules/logging.py)
+- **31026** - $FileCreateMode 0640 in rsyslog.conf
+- **27274** - /var/log/sssd directory permissions
+- **27275** - /var/log/sssd file ownership
+- **29435** - Logfile permissions
+- **23777** - systemd-journal-upload service enabled
+
+### Sudo Module (modules/sudo.py)
+- **29159** - pam_wheel.so su restriction enabled
+
+### Fileperms Module (modules/fileperms.py)
+- **29421** - User dot files permissions (not group writable)
+- **29422** - User dot files ownership
+
+### AIDE Module (modules/aide.py)
+- **17971** - aidecheck.service configuration
+- **10859** - AIDE cron job in /etc/crontab
+
+### Cron Module (modules/cron.py)
+- **26413** - cronie package installed
+- **29357** - at package installed
+
+---
 
 ## Modules Updated
 

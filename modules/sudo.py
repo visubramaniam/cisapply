@@ -178,28 +178,31 @@ def apply(cfg: Dict[str, Any], dry_run: bool, profile: str) -> List[ActionResult
                 with open(pam_su, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
                 
-                # Check if pam_wheel.so is already enabled
-                # The line should be: auth required pam_wheel.so use_uid group=wheel
-                wheel_pattern = r'^auth\s+required\s+pam_wheel\.so\s+use_uid'
+                # Check if pam_wheel.so is already enabled (not commented)
+                # Qualys expects: auth required pam_wheel.so use_uid
+                # Pattern should match: auth required/sufficient pam_wheel.so use_uid [group=...]
+                wheel_pattern = r'^auth\s+(required|sufficient)\s+pam_wheel\.so\s+use_uid'
                 
                 if not re.search(wheel_pattern, content, re.MULTILINE):
                     # Need to add or uncomment the line
-                    wheel_line = f"auth            required        pam_wheel.so use_uid group={su_group}\n"
+                    # Format: auth required pam_wheel.so use_uid group=wheel
+                    wheel_line = f"auth            required        pam_wheel.so use_uid group={su_group}"
                     
-                    # Check if there's a commented version
-                    if "#auth" in content and "pam_wheel.so" in content:
-                        # Uncomment and modify
+                    # First, check if there's a commented version and uncomment it
+                    commented_pattern = r'^#\s*auth\s+\S+\s+pam_wheel\.so.*$'
+                    if re.search(commented_pattern, content, re.MULTILINE):
+                        # Replace commented line with proper configuration
                         new_content = re.sub(
-                            r'^#\s*auth\s+required\s+pam_wheel\.so.*$',
-                            f"auth            required        pam_wheel.so use_uid group={su_group}",
+                            commented_pattern,
+                            wheel_line,
                             content,
                             flags=re.MULTILINE
                         )
                     else:
-                        # Add after the first auth line
+                        # Add new line after pam_rootok.so
                         new_content = re.sub(
                             r'^(auth\s+\S+\s+pam_rootok\.so.*)$',
-                            r'\1\n' + wheel_line.rstrip(),
+                            r'\1\n' + wheel_line,
                             content,
                             count=1,
                             flags=re.MULTILINE
@@ -214,6 +217,8 @@ def apply(cfg: Dict[str, Any], dry_run: bool, profile: str) -> List[ActionResult
                         else:
                             notes = f"DRY-RUN: Would enable pam_wheel.so for group {su_group}"
                             changed = True
+                    else:
+                        notes = "Could not modify PAM configuration (pattern not found)"
                 else:
                     notes = f"pam_wheel.so already configured in {pam_su}"
             else:

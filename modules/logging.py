@@ -17,10 +17,11 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
     ensure_pkg(["rsyslog"], dry_run, results, "LOG-2", "Install rsyslog")
     
     # Configure rsyslog - set $FileCreateMode 0640 (space after mode)
-    # Qualys expects: $FileCreateMode 0640 (with space, not =)
+    # Qualys control 31026 expects: $FileCreateMode 0640
+    # Must be set BEFORE any log file actions in rsyslog.conf
     rsyslog_conf = "/etc/rsyslog.conf"
     control_id = "LOG-3"
-    title = "Configure rsyslog $FileCreateMode"
+    title = "Configure rsyslog $FileCreateMode 0640"
     changed = False
     notes = ""
     
@@ -32,12 +33,24 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
             new_content = content
             modified = False
             
-            # Check if $FileCreateMode is already set correctly
-            if not re.search(r'^\$FileCreateMode\s+0640', content, re.MULTILINE):
-                # Remove any existing $FileCreateMode line
+            # Check if $FileCreateMode 0640 is already set correctly
+            # Qualys regex looks for: ^\$FileCreateMode\s+0640
+            if not re.search(r'^\$FileCreateMode\s+0640\s*$', content, re.MULTILINE):
+                # Remove any existing $FileCreateMode line (may have wrong value)
                 new_content = re.sub(r'^\$FileCreateMode.*$\n?', '', new_content, flags=re.MULTILINE)
-                # Add the correct setting near the top (after any module loads)
-                if '$ModLoad' in new_content:
+                
+                # The setting must appear early in the file, before any rules
+                # Insert after GLOBAL DIRECTIVES section or at the very top
+                if re.search(r'^#### GLOBAL DIRECTIVES', new_content, re.MULTILINE):
+                    new_content = re.sub(
+                        r'^(#### GLOBAL DIRECTIVES.*$)',
+                        r'\1\n$FileCreateMode 0640',
+                        new_content,
+                        count=1,
+                        flags=re.MULTILINE
+                    )
+                elif '$ModLoad' in new_content:
+                    # Insert after first $ModLoad line
                     new_content = re.sub(
                         r'(\$ModLoad[^\n]*\n)',
                         r'\1$FileCreateMode 0640\n',
@@ -45,7 +58,8 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
                         count=1
                     )
                 else:
-                    new_content = "$FileCreateMode 0640\n" + new_content
+                    # Insert at the very beginning
+                    new_content = "$FileCreateMode 0640\n\n" + new_content
                 modified = True
             
             if modified and not dry_run:
@@ -95,13 +109,31 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
             results.append(ActionResult(f"LOG-8-{jf}",f"Set permissions on {jf}", c, True, notes=n, files=[jf]))
     
     # Control: Fix /var/log/sssd permissions if exists
+    # Qualys controls 27274, 27275 check ownership and permissions
+    # sssd log dir should be owned by root:sssd with mode 0750
     control_id = "LOG-9"
     title = "Set permissions on /var/log/sssd directory"
     
     sssd_log_dir = "/var/log/sssd"
     if os.path.exists(sssd_log_dir):
-        c, n = ensure_perm(sssd_log_dir, 0o750, 0, 0, dry_run)
-        results.append(ActionResult(control_id, title, c, True, notes=n, files=[sssd_log_dir]))
+        # Get sssd gid if exists, otherwise use root (0)
+        try:
+            import grp
+            sssd_gid = grp.getgrnam("sssd").gr_gid
+        except KeyError:
+            sssd_gid = 0
+        
+        # Set ownership to root:sssd and mode 0750
+        c, n = ensure_perm(sssd_log_dir, 0o750, 0, sssd_gid, dry_run)
+        
+        # Also fix permissions on files inside /var/log/sssd
+        if not dry_run and os.path.isdir(sssd_log_dir):
+            for f in glob.glob(os.path.join(sssd_log_dir, "*")):
+                if os.path.isfile(f):
+                    os.chmod(f, 0o640)
+                    os.chown(f, 0, sssd_gid)
+        
+        results.append(ActionResult(control_id, title, c, True, notes=n + "; files set to 0640 root:sssd", files=[sssd_log_dir]))
     else:
         results.append(ActionResult(control_id, title, False, True, notes="/var/log/sssd does not exist"))
     

@@ -46,20 +46,32 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str) -> List[ActionResult]
         results.append(ActionResult("FW-3","Configure firewalld", True, ok, notes="\n".join(o for o in out if o),
                                     commands=[shlex.join(c) for c in cmds]))
 
-    # Control: Ensure nftables is masked if firewalld is in use
+    # Control: Ensure nftables is stopped, disabled, and masked if firewalld is in use
+    # Qualys checks for:
+    # - nftables.service not running (20626)
+    # - nftables.service not enabled (17128)
     control_id = "FW-4"
-    title = "Ensure nftables service is masked (firewalld manages nftables)"
+    title = "Ensure nftables service is stopped, disabled, and masked (firewalld manages nftables)"
     
-    cmd_mask = ["systemctl", "mask", "nftables"]
+    nft_cmds = [
+        ["systemctl", "stop", "nftables"],
+        ["systemctl", "disable", "nftables"],
+        ["systemctl", "mask", "nftables"]
+    ]
+    
     if dry_run:
         results.append(ActionResult(control_id, title, True, True,
-                                    notes="DRY-RUN: Would mask nftables service",
-                                    commands=[shlex.join(cmd_mask)]))
+                                    notes="DRY-RUN: Would stop, disable, and mask nftables service",
+                                    commands=[shlex.join(c) for c in nft_cmds]))
     else:
-        cp = run(cmd_mask)
-        results.append(ActionResult(control_id, title, True, cp.returncode == 0,
-                                    notes=(cp.stdout + cp.stderr).strip() or "nftables service masked",
-                                    commands=[shlex.join(cmd_mask)]))
+        out = []
+        for cmd in nft_cmds:
+            cp = run(cmd)
+            if cp.stderr and "not loaded" not in cp.stderr.lower():
+                out.append((cp.stdout + cp.stderr).strip())
+        results.append(ActionResult(control_id, title, True, True,
+                                    notes="; ".join(out) if out else "nftables service stopped, disabled, and masked",
+                                    commands=[shlex.join(c) for c in nft_cmds]))
 
     # Control: Configure loopback traffic rules
     control_id = "FW-5"

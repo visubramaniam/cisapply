@@ -41,6 +41,7 @@ def apply(cfg: Dict[str, Any], dry_run: bool, profile: str) -> List[ActionResult
                 # Check if pam_pwhistory.so is already present
                 if "pam_pwhistory.so" not in content:
                     # Add pam_pwhistory.so line after pam_pwquality.so or at the password section
+                    # Qualys expects 'remember' in the PAM line itself
                     pwhistory_line = "password    requisite     pam_pwhistory.so remember={} use_authtok\n".format(password_remember)
                     
                     # Insert after pam_pwquality.so if present
@@ -61,20 +62,35 @@ def apply(cfg: Dict[str, Any], dry_run: bool, profile: str) -> List[ActionResult
                     
                     if new_content != content:
                         file_changed = True
-                        notes.append(f"Added pam_pwhistory.so to {pam_file}")
+                        notes.append(f"Added pam_pwhistory.so with remember={password_remember} to {pam_file}")
                 else:
-                    # Check if use_authtok is set
-                    if "pam_pwhistory.so" in content and "use_authtok" not in content.split("pam_pwhistory.so")[1].split("\n")[0]:
-                        new_content = re.sub(
-                            r'(password\s+\S+\s+pam_pwhistory\.so[^\n]*)',
-                            r'\1 use_authtok',
-                            content
-                        )
-                        if new_content != content:
+                    # pam_pwhistory.so exists - ensure it has both remember and use_authtok
+                    pwhistory_match = re.search(r'password\s+\S+\s+pam_pwhistory\.so([^\n]*)', content)
+                    if pwhistory_match:
+                        pwhistory_args = pwhistory_match.group(1)
+                        needs_update = False
+                        new_args = pwhistory_args
+                        
+                        # Check if remember is set
+                        if "remember" not in pwhistory_args:
+                            new_args = f" remember={password_remember}" + new_args
+                            needs_update = True
+                        
+                        # Check if use_authtok is set
+                        if "use_authtok" not in pwhistory_args:
+                            new_args = new_args + " use_authtok"
+                            needs_update = True
+                        
+                        if needs_update:
+                            new_content = re.sub(
+                                r'(password\s+\S+\s+pam_pwhistory\.so)[^\n]*',
+                                r'\1' + new_args,
+                                content
+                            )
                             file_changed = True
-                            notes.append(f"Added use_authtok to pam_pwhistory.so in {pam_file}")
+                            notes.append(f"Updated pam_pwhistory.so in {pam_file} with remember={password_remember} use_authtok")
                     else:
-                        notes.append(f"pam_pwhistory.so with use_authtok already configured in {pam_file}")
+                        notes.append(f"pam_pwhistory.so already configured in {pam_file}")
                 
                 if file_changed and not dry_run:
                     # Backup first
