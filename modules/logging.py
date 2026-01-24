@@ -83,6 +83,33 @@ def apply(cfg: Dict[str,Any], dry_run: bool, profile: str):
     ensure_service_enabled("rsyslog", dry_run, results, "LOG-4", "Enable rsyslog service")
     ensure_service_enabled("systemd-journald", dry_run, results, "LOG-5", "Enable systemd-journald service")
     
+    # Control: Ensure rsyslog and systemd-journald are both configured
+    # Qualys control 29445 - both services should be active
+    control_id = "LOG-5a"
+    title = "Ensure rsyslog and systemd-journald services are active"
+    
+    if not dry_run:
+        # Start services if not running
+        run(["systemctl", "start", "rsyslog"])
+        run(["systemctl", "start", "systemd-journald"])
+        
+        # Check status
+        rsyslog_status = run(["systemctl", "is-active", "rsyslog"])
+        journald_status = run(["systemctl", "is-active", "systemd-journald"])
+        
+        rsyslog_active = rsyslog_status.returncode == 0
+        journald_active = journald_status.returncode == 0
+        
+        if rsyslog_active and journald_active:
+            results.append(ActionResult(control_id, title, True, True,
+                                        notes="Both rsyslog and systemd-journald are active"))
+        else:
+            results.append(ActionResult(control_id, title, True, False,
+                                        notes=f"rsyslog: {'active' if rsyslog_active else 'inactive'}, journald: {'active' if journald_active else 'inactive'}"))
+    else:
+        results.append(ActionResult(control_id, title, True, True,
+                                    notes="DRY-RUN: Would verify rsyslog and systemd-journald are active"))
+    
     # Fix log file permissions and ownership
     log_perms = [
         ("/var/log/wtmp", 0o664, 0, 0),
